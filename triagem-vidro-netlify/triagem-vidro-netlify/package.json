@@ -1,0 +1,9 @@
+{
+  "name": "triagem-vidro-netlify",
+  "private": true,
+  "type": "module",
+  "description": "PWA Análise Qualitativa Cores de Caco Vidro com base de dados compartilhada (Netlify Functions + Netlify Blobs)",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.7"
+  }
+}

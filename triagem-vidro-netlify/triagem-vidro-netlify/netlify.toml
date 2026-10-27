@@ -1,0 +1,26 @@
+# Site estático em public/ + API em netlify/functions (Netlify Blobs como base de dados)
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+  command = "echo 'sem build: site estático + functions'"
+
+[functions]
+  node_bundler = "esbuild"
+
+# O service worker e o index sempre revalidados, para atualizações chegarem aos celulares
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+[[headers]]
+  for = "/ff/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+[[headers]]
+  for = "/ff/core.wasm.*"
+  [headers.values]
+    Content-Type = "application/wasm"

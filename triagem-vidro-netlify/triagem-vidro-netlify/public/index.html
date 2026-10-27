@@ -1,0 +1,1013 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f3b3a"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Triagem Vidro"><link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body><title>Triagem de Vidro</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: app de uma coluna para celular — barra superior fixa, abas embaixo, cartões só onde há um objeto (resultado, equipamento) */
+:root{
+  --bg:#eef2f1; --surface:#ffffff; --sunk:#e3e9e8; --fg:#16201f; --muted:#5b6b69; --line:#cfd9d7;
+  --accent:#d98a10; --accent-fg:#1a1205; --ink:#0f3b3a;
+  --ok:#2e7d4f; --warn:#b4560c; --bad:#b3261e;
+  --c-il:#8fd0c6; --c-is:#c8ad55; --c-cl:#263036; --c-cs:#7a8389; --c-br:#f3efe4; --c-vd:#3c9566; --c-av:#b34f3a;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:Barlow,"Segoe UI",Roboto,Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --scrim:rgba(8,18,18,.62);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1514; --surface:#16201f; --sunk:#1d2928; --fg:#e4ecea; --muted:#94a6a3; --line:#2a3836;
+  --accent:#f0a12a; --accent-fg:#1a1205; --ink:#9fe0d6;
+  --ok:#5cc188; --warn:#f0a050; --bad:#ff8a80;
+  --c-cl:#0b0f11; --c-cs:#8a949a; --c-br:#e9e4d6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1514; --surface:#16201f; --sunk:#1d2928; --fg:#e4ecea; --muted:#94a6a3; --line:#2a3836;
+  --accent:#f0a12a; --accent-fg:#1a1205; --ink:#9fe0d6;
+  --ok:#5cc188; --warn:#f0a050; --bad:#ff8a80;
+  --c-cl:#0b0f11; --c-cs:#8a949a; --c-br:#e9e4d6; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
+.app{max-width:760px;margin:0 auto;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--ink);color:var(--bg);padding-block:12px}
+:root header.top{color:#eef6f4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) header.top{color:#0e1514}}
+:root[data-theme="dark"] header.top{color:#0e1514}
+.top-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.01em;white-space:nowrap}
+@media (max-width:420px){.brand small{display:none}.sync{font-size:10px;text-align:right}}
+.brand small{font-weight:500;font-size:13px;opacity:.75;letter-spacing:.06em;text-transform:uppercase;margin-left:8px}
+.sync{font-family:var(--f-mono);font-size:11px;opacity:.8}
+h2{font-family:var(--f-display);font-weight:600;font-size:20px;margin:0;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:600;font-size:16px;margin:0}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.view{display:flex;flex-direction:column;gap:18px;padding-block:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button,.chipbtn{font:600 14px var(--f-body);padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.seg button[aria-pressed="true"],.chipbtn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+button:focus-visible,input:focus-visible,select:focus-visible,label.drop:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font:600 15px var(--f-body);border:0;border-radius:8px;padding:12px 18px;cursor:pointer;background:var(--accent);color:var(--accent-fg)}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.btn.small{padding:7px 12px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input[type=text],input[type=password],input[type=date],input[type=number],select,textarea{font:500 15px var(--f-body);padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-width:0}
+label.field{display:flex;flex-direction:column;gap:4px;flex:1 1 140px;min-width:0}
+label.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed var(--line);border-radius:10px;padding:22px 12px;text-align:center;cursor:pointer;background:var(--sunk)}
+label.drop strong{font-family:var(--f-display);font-size:18px}
+label.drop{position:relative}
+label.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.hint{font-size:13px;color:var(--muted)}
+.cropwrap{position:relative;width:100%;border-radius:8px;overflow:hidden;background:var(--sunk)}
+.cropwrap canvas{display:block;width:100%;height:auto}
+.sliders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px}
+.sliders label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:2px}
+.sliders input{width:100%;accent-color:var(--accent)}
+.progress{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(0,9.5em) minmax(0,1fr) 4.2em;gap:10px;align-items:center;font-size:14px}
+.bar .track{height:14px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.bar .fill{height:100%;border-radius:3px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;font-size:13px}
+.sw{display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;margin-right:6px;border:1px solid var(--line)}
+.stack{display:flex;height:12px;border-radius:3px;overflow:hidden;background:var(--sunk)}
+.stack span{display:block;height:100%}
+.dest{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dest div{background:var(--sunk);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.dest b{font-family:var(--f-mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.dest span{font-size:12px;color:var(--muted);line-height:1.3}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid currentColor}
+.pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)} .pill.bad{color:var(--bad)}
+.ovtabs{display:flex;gap:6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.eqgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.eq h3{display:flex;justify-content:space-between;align-items:baseline}
+.eq h3 small{font:400 12px var(--f-body);color:var(--muted)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:13px}
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item .meta{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:13px;color:var(--muted)}
+.item .vid{font-family:var(--f-mono);font-size:13px;color:var(--fg);font-weight:600}
+.item .bigs{font-family:var(--f-mono);font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
+.item .full{grid-column:1/-1;display:flex;flex-direction:column;gap:4px}
+.scale{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.empty{padding:24px 8px;text-align:center;color:var(--muted)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+nav.tabs button{flex:1;max-width:220px;background:none;border:0;padding:10px 4px 12px;font:600 13px var(--f-body);color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav.tabs button[aria-current="page"]{color:var(--fg)}
+nav.tabs button[aria-current="page"] svg{color:var(--accent)}
+nav.tabs svg{width:22px;height:22px}
+.method p{margin:0 0 10px;max-width:65ch}
+.method ul{margin:0 0 10px;padding-left:18px;max-width:65ch}
+.thr{display:grid;grid-template-columns:minmax(0,1fr) 6em;gap:8px 12px;align-items:center;font-size:14px}
+.thr input{width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
+.confirm{display:flex;gap:6px;align-items:center;font-size:13px}
+.queue{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.qi{position:relative;border-radius:6px;overflow:hidden;background:var(--sunk);aspect-ratio:1;max-width:100%}
+.qi img{width:100%;height:100%;object-fit:cover;display:block}
+.qi .st{position:absolute;left:0;right:0;bottom:0;font:600 10px var(--f-mono);padding:3px 5px;background:var(--surface);color:var(--fg);opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qi .st.ok{color:var(--ok)} .qi .st.err{color:var(--bad)}
+.qi button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:0;background:var(--surface);color:var(--fg);font:700 14px/1 var(--f-body);cursor:pointer}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.gi{display:flex;flex-direction:column;gap:4px;background:none;border:0;padding:0;text-align:left;cursor:pointer;color:var(--fg);font:inherit;min-width:0}
+.gi .ph{aspect-ratio:4/3;border-radius:6px;overflow:hidden;background:var(--sunk);max-width:100%}
+.gi .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.gi .cap{font-size:12px;line-height:1.3;display:flex;flex-direction:column;min-width:0}
+.gi .cap b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gi .cap span{color:var(--muted)}
+.tag{display:inline-block;font:600 10px var(--f-body);letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:var(--sunk);color:var(--muted)}
+.tag.ref{background:var(--accent);color:var(--accent-fg)}
+.counts{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
+.counts span{background:var(--sunk);border-radius:999px;padding:3px 10px}
+.counts b{font-family:var(--f-mono);font-weight:600;margin-left:4px}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px}
+.chk input{width:18px;height:18px;accent-color:var(--accent)}
+.modal{position:fixed;inset:0;z-index:30;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;padding-top:env(safe-area-inset-top,0px)}
+.sheet{background:var(--surface);color:var(--fg);width:100%;max-width:760px;max-height:92%;overflow:auto;border-radius:14px 14px 0 0;padding-block:16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.sheet img{width:100%;border-radius:8px;display:block;background:var(--sunk)}
+@media (min-width:700px){.modal{align-items:center}.sheet{border-radius:14px;max-height:88%}}
+.cadsec{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:14px}
+.cadsec:first-of-type{border-top:0;padding-top:0}
+.cadsec .hint{margin:0}
+.crow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:7px 0;border-bottom:1px dashed var(--line)}
+.crow .cname{font-weight:600;flex:1 1 5em;min-width:0;overflow-wrap:anywhere}
+.crow .cmeta{font-size:12px;color:var(--muted);flex:1 1 12em;min-width:0}
+.crow select{flex:0 1 12em;min-width:0}
+.cadd label.mini{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}
+.cadd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.cadd input[type=text]{flex:2 1 10em}
+.cadd select{flex:1 1 9em}
+.cadd input[type=number]{flex:0 1 5.5em;width:5.5em}
+.repbox{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+textarea{resize:vertical;width:100%}
+.lnk{background:none;border:0;padding:8px 6px;font:600 14px var(--f-body);color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+@media (max-width:420px){.bar{grid-template-columns:minmax(0,7.6em) minmax(0,1fr) 3.8em}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <header class="top gut">
+    <div class="top-row">
+      <div class="brand">Triagem de Vidro<small>protótipo</small></div>
+      <div class="sync" id="sync">histórico local</div>
+    </div>
+  </header>
+
+  <!-- ANALISAR -->
+  <section class="view gut" id="v-analisar">
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>Nova análise</h2><span class="label">vídeo ou foto</span></div>
+      <div class="field" style="display:flex;flex-direction:column;gap:6px">
+        <span class="label">Equipamento</span>
+        <div class="seg" id="eqSeg"></div>
+      </div>
+      <div class="row">
+        <label class="field"><span class="label">Data</span><input type="date" id="dt"></label>
+        <label class="field"><span class="label">Superfície</span>
+          <select id="surf"></select></label>
+      </div>
+      <label class="field"><span class="label">Ponto da linha</span><select id="pt"></select></label>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="video/*,image/*">
+        <strong>Filmar ou escolher arquivo</strong>
+        <span class="hint" id="fileHint">Grave uns 20 s com o celular parado, enquadrando só o material.</span>
+      </label>
+      <div class="repbox" id="convRow" hidden style="padding-top:12px">
+        <span class="label">Conversão HEVC → MP4</span>
+        <span class="hint" id="convHint"></span>
+        <div class="progress" id="convProg" hidden><i></i></div>
+        <div class="row"><button class="btn ghost small" id="convBtn">Converter para MP4</button><button class="btn ghost small" id="convDl" hidden>Baixar vídeo convertido</button></div>
+      </div>
+      <div id="cropBox" hidden>
+        <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label">Área analisada</span><span class="hint">ajuste para excluir bordas, tremonha e chão</span></div>
+        <div class="cropwrap"><canvas id="cropCv"></canvas></div>
+        <div class="sliders" style="margin-top:10px">
+          <label>Topo <input type="range" id="cT" min="0" max="90" value="30"></label>
+          <label>Base <input type="range" id="cB" min="10" max="100" value="97"></label>
+          <label>Esquerda <input type="range" id="cL" min="0" max="90" value="0"></label>
+          <label>Direita <input type="range" id="cR" min="10" max="100" value="100"></label>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="run" disabled>Analisar</button>
+        <span class="hint" id="runHint">Escolha um vídeo para começar.</span>
+      </div>
+      <div class="progress" id="prog" hidden><i></i></div>
+    </div>
+
+    <div class="card" id="resCard">
+      <div class="row" style="justify-content:space-between">
+        <div><h2 id="resTitle">Exemplo: CV24 · 15/10</h2><div class="hint" id="resSub">Resultado de uma análise já feita, para mostrar o formato.</div></div>
+        <div class="row" id="resPills"></div>
+      </div>
+      <div class="bars" id="resBars"></div>
+      <div>
+        <div class="label" style="margin-bottom:8px">Balanço por destino</div>
+        <div class="dest" id="resDest"></div>
+      </div>
+      <div id="ovBox" hidden>
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <span class="label">Quadro classificado</span>
+          <div class="ovtabs"><button class="chipbtn" id="ovA" aria-pressed="true">Classes</button><button class="chipbtn" id="ovB" aria-pressed="false">Original</button></div>
+        </div>
+        <div class="cropwrap"><canvas id="ovCv"></canvas></div>
+        <div class="legend" id="ovLegend" style="margin-top:8px"></div>
+      </div>
+      <div class="row" id="saveRow" hidden>
+        <label class="field" style="flex:2 1 200px"><span class="label">Nome</span><input type="text" id="saveName"></label>
+        <button class="btn" id="save">Salvar no histórico</button>
+        <label class="chk" style="flex-basis:100%"><input type="checkbox" id="saveImg" checked> Guardar também o quadro no banco de imagens</label>
+      </div>
+      <div class="repbox" id="repBox" hidden>
+        <span class="label">Relatório padrão</span>
+        <label class="field"><span class="label">Responsável</span><input type="text" id="repResp" placeholder="Nome de quem coletou ou analisou"></label>
+        <label class="field"><span class="label">Observações</span><textarea id="repObs" rows="2" placeholder="Condições da coleta, umidade, turno…"></textarea></label>
+        <div class="row"><button class="btn" id="repBtn">Gerar relatório (PDF)</button><span class="hint" id="repHint">Inclui imagens, composição, limites e campo de assinatura.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTÓRICO -->
+  <section class="view gut" id="v-hist" hidden>
+    <div class="row" style="justify-content:space-between">
+      <h2>Histórico</h2>
+      <div class="row"><button class="btn ghost small" id="imp">Importar CSV</button><input type="file" id="impFile" accept=".csv,text/csv" hidden><button class="btn small" id="exp">Exportar CSV</button></div>
+    </div>
+    <div class="seg" id="fSeg"></div>
+    <div class="eqgrid" id="eqCards"></div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h3>Análises</h3><span class="hint">barra = tudo que não é incolor limpo, escala 0–25%</span></div>
+      <div class="list" id="hList"></div>
+    </div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section class="view gut" id="v-met" hidden>
+    <div class="card" id="cadastros">
+      <div class="row" style="justify-content:space-between"><h2>Cadastros</h2><span class="label" id="cadScope"></span></div>
+      <div id="cad" style="display:flex;flex-direction:column;gap:14px"></div>
+    </div>
+    <div class="card">
+      <h2>Cabeçalho do relatório</h2>
+      <div class="row">
+        <label class="field"><span class="label">Nome do sistema</span><input type="text" id="rTit" maxlength="60"></label>
+        <label class="field"><span class="label">Empresa / unidade</span><input type="text" id="rEmp" maxlength="60" placeholder="ex.: Unidade Guarulhos"></label>
+      </div>
+      <div class="row"><button class="btn small" id="rSave">Salvar cabeçalho</button><span class="hint">Aparece no topo de todo relatório.</span></div>
+    </div>
+    <div class="card">
+      <h2>Limites de alerta</h2>
+      <div class="thr">
+        <label for="tCz">Cinza total deve ser menor que (%)</label><input type="number" id="tCz" step="0.5" min="0">
+        <label for="tBr">Branco opaco deve ser menor que (%)</label><input type="number" id="tBr" step="0.5" min="0">
+        <label for="tIs">Incolor sujo deve ser menor que (%)</label><input type="number" id="tIs" step="0.5" min="0">
+      </div>
+      <span class="hint">Ficam salvos só neste aparelho.</span>
+    </div>
+    <div class="card method">
+      <h2>Como a análise funciona</h2>
+      <p>O app extrai 1 quadro por segundo do vídeo (até 30), recorta a área escolhida e classifica cada pixel pela cor e pelo brilho em relação ao próprio quadro. A conta roda no aparelho, sem enviar o vídeo para lugar nenhum.</p>
+      <ul>
+        <li><b>Incolor limpo</b>: vidro claro sem película; é o que sobra depois das outras classes.</li>
+        <li><b>Incolor sujo</b>: vidro claro com tom amarelado e fosco em relação ao vidro ao redor.</li>
+        <li><b>Cinza limpo</b>: peça escura com aspecto preto brilhante.</li>
+        <li><b>Cinza sujo</b>: peça escura fosca, cinza-chumbo.</li>
+        <li><b>Branco opaco</b>: porcelana, cerâmica ou papel. A cor sozinha não separa os três.</li>
+        <li><b>Verde, azul e vermelho</b>: peças coloridas.</li>
+      </ul>
+      <p>Na correia preta, as faixas escuras alongadas entre as peças são tratadas como correia e saem do total.</p>
+      <h3>Limites</h3>
+      <ul>
+        <li>Mede área de superfície, não massa.</li>
+        <li>Limpo × sujo no incolor é a separação menos precisa.</li>
+        <li>Luz e ângulo mudam o resultado: filme sempre do mesmo ponto, com o celular parado.</li>
+        <li>Vídeos HEVC do iPhone podem não abrir no Chrome do Android. No iPhone, abra pelo Safari.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- IMAGENS -->
+  <section class="view gut" id="v-img" hidden>
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>Entrada de imagens</h2><span class="label" id="iUsage"></span></div>
+      <p class="hint" id="iPerm" style="margin:0" hidden>Enviar imagens exige acesso de edição a este app. Você ainda pode ver o banco abaixo.</p>
+      <div id="iForm" style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px"><span class="label">Tipo</span>
+          <div class="seg" id="iTipoSeg"></div>
+          <span class="hint" id="iTipoHint">Foto do material passando na calha ou correia. Pode ter a composição calculada.</span>
+        </div>
+        <label class="field" id="iClasseF" hidden><span class="label">Classe da amostra</span><select id="iClasse"></select></label>
+        <div style="display:flex;flex-direction:column;gap:6px"><span class="label">Equipamento</span><div class="seg" id="iEqSeg"></div></div>
+        <div class="row">
+          <label class="field"><span class="label">Data</span><input type="date" id="iDt"></label>
+          <label class="field"><span class="label">Ponto da linha</span><select id="iPonto"></select></label>
+        </div>
+        <label class="field"><span class="label">Observação</span><input type="text" id="iObs" placeholder="ex.: luz da manhã, material úmido"></label>
+        <label class="drop"><input type="file" id="iFile" accept="image/*,video/*" multiple><strong>Adicionar fotos ou vídeo</strong><span class="hint">Várias fotos de uma vez. De um vídeo, o app extrai quadros.</span></label>
+        <div class="row">
+          <label class="field" style="flex:0 1 160px"><span class="label">Quadros por vídeo</span><input type="number" id="iFr" min="1" max="30" value="5"></label>
+          <label class="chk" id="iCompF"><input type="checkbox" id="iComp" checked> Calcular composição ao enviar <span class="hint">(usa a foto inteira: enquadre só o material)</span></label>
+        </div>
+        <div class="queue" id="iQueue"></div>
+        <div class="progress" id="iProg" hidden><i></i></div>
+        <div class="row"><button class="btn" id="iSend" disabled>Enviar imagens</button><span class="hint" id="iHint">Nenhuma imagem na fila.</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h3>Banco de imagens</h3>
+        <div class="row" style="gap:6px"><button class="btn ghost small" id="icImpBtn">Importar CSV</button><button class="btn ghost small" id="iExp">Exportar catálogo CSV</button></div></div>
+      <div class="repbox" id="icBox" hidden>
+        <div class="row" style="justify-content:space-between"><span class="label">Importar catálogo CSV</span><button type="button" class="lnk" id="icModel">Baixar modelo CSV</button></div>
+        <p class="hint" style="margin:0">Use o catálogo exportado por este app ou uma planilha com uma linha por foto. Cada linha é ligada à foto pelo <b>nome</b> (nome do arquivo sem extensão). Linhas cujo arquivo já está no banco são religadas sem enviar de novo.</p>
+        <div class="row">
+          <label class="btn ghost small" style="cursor:pointer">1. Escolher CSV<input type="file" id="icCsv" accept=".csv,text/csv" hidden></label>
+          <label class="btn ghost small" style="cursor:pointer">2. Escolher as fotos<input type="file" id="icFotos" accept="image/*" multiple hidden></label>
+        </div>
+        <div class="hint" id="icSum">Nenhum arquivo escolhido.</div>
+        <div class="list" id="icList" style="max-height:260px;overflow:auto"></div>
+        <div class="progress" id="icProg" hidden><i></i></div>
+        <div class="row"><button class="btn" id="icRun" disabled>Importar</button><button class="btn ghost small" id="icCancel">Fechar</button></div>
+      </div>
+      <div class="seg" id="gTipo"></div>
+      <div class="row"><label class="field" style="flex:0 1 200px"><span class="label">Equipamento</span><select id="gEq"></select></label></div>
+      <div class="counts" id="gCounts"></div>
+      <div class="gal" id="gal"></div>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="iModal" hidden><div class="sheet gut" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="row" style="justify-content:space-between"><h2 id="mTitle"></h2><button class="btn ghost small" id="mClose">Fechar</button></div>
+  <img id="mImg" alt="">
+  <div class="kv" id="mKv"></div>
+  <div class="bars" id="mBars"></div>
+  <div class="row" id="mAct"></div>
+</div></div>
+
+<div class="modal" id="keyModal" hidden><div class="sheet gut" role="dialog" aria-modal="true" aria-labelledby="kTitle">
+  <h2 id="kTitle">Código de acesso da equipe</h2>
+  <p class="hint" style="margin:0">Esta base é compartilhada. Digite o código definido pelo responsável (variável APP_KEY no Netlify).</p>
+  <form id="kForm" class="row"><input type="password" id="kIn" autocomplete="current-password" aria-label="Código de acesso" style="flex:1 1 200px"><button class="btn">Entrar</button></form>
+  <span class="hint" id="kErr"></span>
+  <div><button type="button" class="lnk" id="kLocal">Continuar só neste aparelho</button></div>
+</div></div>
+
+<nav class="tabs" aria-label="Seções">
+  <button data-v="analisar" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>Analisar</button>
+  <button data-v="hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Histórico</button>
+  <button data-v="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>Imagens</button>
+  <button data-v="met"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>Ajustes</button>
+</nav>
+<div class="toast" id="toast" hidden></div>
+
+<script id="clf">
+/* ===== Classificador (mesma lógica do script Python das análises de 15–16/10) ===== */
+const LIN=new Float32Array(256);for(let i=0;i<256;i++){const c=i/255;LIN[i]=c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4)}
+function medHist(h,n){let a=0;const half=n/2;for(let i=0;i<h.length;i++){a+=h[i];if(a>=half)return i}return h.length-1}
+function cc(mask,W,H){ // componentes conexos 8-vizinhança
+  const N=W*H,lab=new Int32Array(N),par=new Int32Array((N>>1)+2);let nl=0;
+  const find=x=>{while(par[x]!==x){par[x]=par[par[x]];x=par[x]}return x};
+  const uni=(a,b)=>{a=find(a);b=find(b);if(a!==b){if(a<b)par[b]=a;else par[a]=b}};
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(!mask[i])continue;let l=0;
+    let v=x>0?lab[i-1]:0;if(v)l=v;
+    if(y>0){v=x>0?lab[i-W-1]:0;if(v){if(!l)l=v;else if(v!==l)uni(l,v)}
+      v=lab[i-W];if(v){if(!l)l=v;else if(v!==l)uni(l,v)}
+      v=x<W-1?lab[i-W+1]:0;if(v){if(!l)l=v;else if(v!==l)uni(l,v)}}
+    if(!l){nl++;par[nl]=nl;l=nl}lab[i]=l}
+  const map=new Int32Array(nl+1);let n=0;
+  for(let k=1;k<=nl;k++){const r=find(k);if(r===k)map[k]=++n}
+  for(let k=1;k<=nl;k++)map[k]=map[find(k)];
+  const area=new Int32Array(n+1),x0=new Int32Array(n+1).fill(1e9),y0=new Int32Array(n+1).fill(1e9),x1=new Int32Array(n+1),y1=new Int32Array(n+1);
+  for(let i=0;i<N;i++){if(!lab[i])continue;const c=map[lab[i]];lab[i]=c;area[c]++;const x=i%W,y=(i/W)|0;if(x<x0[c])x0[c]=x;if(x>x1[c])x1[c]=x;if(y<y0[c])y0[c]=y;if(y>y1[c])y1[c]=y}
+  return {lab,n,area,x0,y0,x1,y1};
+}
+function blobs(mask,W,H,minA){const r=cc(mask,W,H),k=new Uint8Array(W*H);for(let i=0;i<k.length;i++){const c=r.lab[i];if(c&&r.area[c]>=minA)k[i]=1}return k}
+function blur(src,W,H,rad,passes){ // box blur separável, bordas replicadas
+  const N=W*H,k=2*rad+1;let a=Float32Array.from(src);const b=new Float32Array(N);
+  const rowBuf=new Float32Array(Math.max(W,H)+2*rad);
+  for(let p=0;p<passes;p++){
+    for(let y=0;y<H;y++){const o=y*W;for(let x=0;x<W+2*rad;x++){const xx=x-rad;rowBuf[x]=a[o+(xx<0?0:xx>=W?W-1:xx)]}
+      let s=0;for(let x=0;x<k;x++)s+=rowBuf[x];for(let x=0;x<W;x++){b[o+x]=s/k;s+=rowBuf[x+k]-rowBuf[x]}}
+    for(let x=0;x<W;x++){for(let y=0;y<H+2*rad;y++){const yy=y-rad;rowBuf[y]=b[(yy<0?0:yy>=H?H-1:yy)*W+x]}
+      let s=0;for(let y=0;y<k;y++)s+=rowBuf[y];for(let y=0;y<H;y++){a[y*W+x]=s/k;s+=rowBuf[y+k]-rowBuf[y]}}
+  }return a}
+const CODES={incolor_limpo:0,incolor_sujo:1,cinza_limpo:2,cinza_sujo:3,branco:4,verde:5,azul:6,vermelho:7,correia:8};
+function classifyFrame(d,W,H,belt){
+  const N=W*H,Hh=new Uint8Array(N),S=new Uint8Array(N),V=new Uint8Array(N),hS=new Uint32Array(256),hV=new Uint32Array(256);
+  const R=new Float32Array(N),G=new Float32Array(N),B=new Float32Array(N);
+  for(let i=0;i<N;i++){const r=d[4*i],g=d[4*i+1],b=d[4*i+2];R[i]=r;G[i]=g;B[i]=b;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b),df=mx-mn;V[i]=mx;const s=mx?Math.round(255*df/mx):0;S[i]=s;
+    let h=0;if(df){if(mx===r)h=60*(g-b)/df;else if(mx===g)h=120+60*(b-r)/df;else h=240+60*(r-g)/df;if(h<0)h+=360}
+    Hh[i]=Math.round(h/2)%180;hS[s]++;hV[mx]++}
+  const Vm=medHist(hV,N),Sm=medHist(hS,N);
+  const Rb=blur(R,W,H,2,2),Gb=blur(G,W,H,2,2),Bb=blur(B,W,H,2,2);
+  const L=new Float32Array(N),Bs=new Float32Array(N);
+  const f=t=>t>0.008856?Math.cbrt(t):7.787*t+16/116;
+  for(let i=0;i<N;i++){const r=LIN[Math.round(Rb[i])],g=LIN[Math.round(Gb[i])],b=LIN[Math.round(Bb[i])];
+    const Y=0.212671*r+0.715160*g+0.072169*b,Z=(0.019334*r+0.119193*g+0.950227*b)/1.088754;
+    const Lv=Y>0.008856?116*Math.cbrt(Y)-16:903.3*Y;L[i]=Lv*2.55;Bs[i]=200*(f(Y)-f(Z))+128}
+  const F=0.25,mk=fn=>{const m=new Uint8Array(N);for(let i=0;i<N;i++)if(fn(i))m[i]=1;return m};
+  const m={};
+  const sB=Math.max(18,0.8*Sm);
+  m.branco=blobs(mk(i=>(belt?V[i]>232:V[i]>Vm+40)&&S[i]<sB),W,H,300*F);
+  m.azul=blobs(mk(i=>Hh[i]>=100&&Hh[i]<=135&&S[i]>60&&V[i]>40),W,H,60*F);
+  m.vermelho=blobs(mk(i=>(Hh[i]<=8||Hh[i]>=165)&&S[i]>110&&V[i]>50),W,H,60*F);
+  m.verde=blobs(mk(i=>Hh[i]>=62&&Hh[i]<=100&&S[i]>=Sm+(belt?14:9)&&V[i]>90),W,H,250*F);
+  const dark=blobs(mk(i=>V[i]<0.62*Vm),W,H,400*F);
+  const r=cc(dark,W,H),cl=new Uint8Array(N),cs=new Uint8Array(N),cb=new Uint8Array(N);
+  if(r.n){ // agrupa pixels por componente para medianas
+    const off=new Int32Array(r.n+2);for(let i=0;i<N;i++)if(r.lab[i])off[r.lab[i]+1]++;
+    for(let c=1;c<=r.n+1;c++)off[c]+=off[c-1];const idx=new Int32Array(off[r.n+1]),pos=off.slice();
+    for(let i=0;i<N;i++){const c=r.lab[i];if(c)idx[pos[c]++]=i}
+    const med=(arr,c)=>{const n=off[c+1]-off[c],t=new Uint8Array(n);for(let j=0;j<n;j++)t[j]=arr[idx[off[c]+j]];t.sort();return n%2?t[n>>1]:(t[n/2-1]+t[n/2])/2};
+    const cls=new Uint8Array(r.n+1); // 1 limpo 2 sujo 3 correia 4 sombra
+    for(let c=1;c<=r.n;c++){const ww=r.x1[c]-r.x0[c]+1,hh=r.y1[c]-r.y0[c]+1,fill=r.area[c]/(ww*hh);
+      if(!belt&&fill<0.3){cls[c]=4;continue}
+      if(belt&&(ww>2.2*hh||fill<0.35||med(V,c)<70)){cls[c]=3;continue}
+      cls[c]=(med(S,c)>=Sm+38||med(V,c)<0.35*Vm)?1:2}
+    for(let i=0;i<N;i++){const c=r.lab[i];if(!c)continue;const k=cls[c];if(k===1)cl[i]=1;else if(k===2)cs[i]=1;else if(k===3)cb[i]=1}
+  }
+  m.cinza_limpo=cl;m.cinza_sujo=cs;if(belt)m.correia=cb;
+  const code=new Uint8Array(N).fill(255);
+  const order=['branco','azul','vermelho','verde','cinza_limpo','cinza_sujo','correia'];
+  const cnt={};
+  for(const k of order){if(!m[k])continue;let c=0;const a=m[k],cd=CODES[k];for(let i=0;i<N;i++)if(a[i]&&code[i]===255){code[i]=cd;c++}cnt[k]=c}
+  const hb=new Uint32Array(1024);let nf=0;for(let i=0;i<N;i++)if(code[i]===255){hb[Math.max(0,Math.min(1023,Math.round(Bs[i]*4)))]++;nf++}
+  const bref=medHist(hb,nf)/4;
+  const isj=blobs(mk(i=>code[i]===255&&Bs[i]-bref>2.5&&L[i]>140),W,H,400*F);
+  let ns=0,nl=0;for(let i=0;i<N;i++){if(code[i]!==255)continue;if(isj[i]){code[i]=1;ns++}else{code[i]=0;nl++}}
+  cnt.incolor_sujo=ns;cnt.incolor_limpo=nl;
+  const tot=N-(cnt.correia||0),pct={};
+  for(const k of ['incolor_limpo','incolor_sujo','cinza_limpo','cinza_sujo','branco','verde','azul','vermelho'])pct[k]=100*(cnt[k]||0)/tot;
+  pct.correia=100*(cnt.correia||0)/N;
+  return {pct,code};
+}
+</script>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const CL=[
+  {k:'incolor_limpo',n:'Incolor limpo',v:'--c-il',ov:null},
+  {k:'incolor_sujo',n:'Incolor sujo',v:'--c-is',ov:[240,205,30]},
+  {k:'cinza_limpo',n:'Cinza limpo',v:'--c-cl',ov:[225,35,35]},
+  {k:'cinza_sujo',n:'Cinza sujo',v:'--c-cs',ov:[255,135,0]},
+  {k:'branco',n:'Branco opaco',v:'--c-br',ov:[255,0,255]},
+  {k:'verde',n:'Verde / verde-água',v:'--c-vd',ov:[0,225,0]},
+  {k:'azul_vermelho',n:'Azul + vermelho',v:'--c-av',ov:[40,70,255]}];
+const OVC={1:[240,205,30],2:[225,35,35],3:[255,135,0],4:[255,0,255],5:[0,225,0],6:[40,70,255],7:[40,70,255],8:[45,45,45]};
+/* ---------- cadastros (listas editáveis) ---------- */
+const DEFCFG={equipamentos:[{codigo:'CV24',superficie:'Calha metálica'},{codigo:'CV13',superficie:'Calha metálica'},{codigo:'CT22',superficie:'Correia preta'},{codigo:'Bancada',superficie:'Bancada (fundo neutro)'}],
+  superficies:[{nome:'Calha metálica',escuro:false,recorte:[35,97]},{nome:'Correia preta',escuro:true,recorte:[30,95]},{nome:'Bancada (fundo neutro)',escuro:false,recorte:[0,100]}],
+  tipos:[{nome:'Quadro da linha',base:'linha'},{nome:'Amostra de referência',base:'referencia'}],
+  pontos:['Entrada da linha','Após peneira','Aceito do óptico','Rejeito do óptico','Produto final'],
+  classes:['Incolor limpo','Incolor sujo','Cinza limpo','Cinza sujo','Branco opaco','Verde / verde-água','Azul + vermelho','Mistura de referência'],
+  relatorio:{titulo:'Análise Qualitativa Cores de Caco Vidro',empresa:''}};
+let cfg=JSON.parse(JSON.stringify(DEFCFG)),cfgWrite=null;
+function normCfg(c){const d=JSON.parse(JSON.stringify(DEFCFG));if(!c||typeof c!=='object')return d;
+  const o={equipamentos:Array.isArray(c.equipamentos)&&c.equipamentos.length?c.equipamentos:d.equipamentos,superficies:Array.isArray(c.superficies)&&c.superficies.length?c.superficies:d.superficies,
+    tipos:Array.isArray(c.tipos)&&c.tipos.length?c.tipos:d.tipos,pontos:Array.isArray(c.pontos)?c.pontos:d.pontos,classes:Array.isArray(c.classes)&&c.classes.length?c.classes:d.classes,
+    relatorio:c.relatorio&&typeof c.relatorio==='object'?{titulo:c.relatorio.titulo||d.relatorio.titulo,empresa:c.relatorio.empresa||''}:d.relatorio};return o}
+const surfOf=n=>cfg.superficies.find(x=>x.nome===n)||cfg.superficies[0];
+const eqSurf=code=>{const e=cfg.equipamentos.find(x=>x.codigo===code);return surfOf(e?e.superficie:null)};
+const tipoBase=t=>t==='linha'||t==='referencia'?t:((cfg.tipos.find(x=>x.nome===t)||{}).base||'linha');
+const tipoNome=t=>t==='linha'?'Quadro da linha':t==='referencia'?'Amostra de referência':t;
+const isRef=d=>(d.base||tipoBase(d.tipo))==='referencia';
+const fmt=x=>(x==null||isNaN(x))?'–':(x<0.05&&x>0?'<0,1':x.toFixed(1).replace('.',','))+'%';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let toastT;function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>e.hidden=true,3200)}
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- estado ---------- */
+let lastCtx=null,preview=null,eq='CV24',file=null,media=null,lastRes=null,ovMode='cls';
+let records=[];let store=null; // store: {kind:'db'|'local', add, del}
+let filt='Todos';
+const thr=Object.assign({cz:5,br:3,is:5},ls.get('tg_thr',{}));
+
+/* ---------- abas ---------- */
+const views={analisar:$('#v-analisar'),hist:$('#v-hist'),img:$('#v-img'),met:$('#v-met')};
+function show(v){for(const k in views)views[k].hidden=k!==v;document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.v===v?'page':'false'));window.scrollTo(0,0);if(v==='hist')renderHist();if(v==='img'&&window.__renderGal)window.__renderGal();if(v==='met'&&window.__renderCad)window.__renderCad()}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+const startView=location.hash.slice(1);
+
+/* ---------- formulário ---------- */
+const today=new Date();$('#dt').value=new Date(today-today.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+function goCad(){show('met');setTimeout(()=>$('#cadastros').scrollIntoView({block:'start'}),0)}
+function newBtn(){const b=document.createElement('button');b.type='button';b.className='lnk';b.textContent='+ Cadastrar';b.onclick=goCad;return b}
+function renderEqSeg(){const s=$('#eqSeg');s.innerHTML='';const codes=cfg.equipamentos.map(x=>x.codigo);if(!codes.includes(eq)){eq=codes[0];setSurf(eqSurf(eq).nome)}
+  codes.forEach(e=>{const b=document.createElement('button');b.type='button';b.textContent=e;b.setAttribute('aria-pressed',String(e===eq));b.onclick=()=>{eq=e;setSurf(eqSurf(e).nome);renderEqSeg()};s.appendChild(b)});s.appendChild(newBtn())}
+function renderSurfOpts(){const sel=$('#surf'),cur=sel.value;sel.innerHTML=cfg.superficies.map(x=>`<option>${esc(x.nome)}</option>`).join('');sel.value=cfg.superficies.some(x=>x.nome===cur)?cur:eqSurf(eq).nome}
+function setSurf(n){const sf=surfOf(n);$('#surf').value=sf.nome;const r=sf.recorte||[0,100];[r[0],r[1],0,100].forEach((v,i)=>$('#'+['cT','cB','cL','cR'][i]).value=v);drawCrop()}
+$('#surf').onchange=e=>setSurf(e.target.value);
+renderSurfOpts();renderEqSeg();setSurf(eqSurf(eq).nome);
+
+/* ---------- mídia ---------- */
+function loadVideo(f){return new Promise((res,rej)=>{const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='auto';v.src=URL.createObjectURL(f);
+  v.onloadeddata=()=>v.videoWidth?res(v):rej(new Error('nodecode'));v.onerror=()=>rej(new Error('video'));setTimeout(()=>rej(new Error('timeout')),15000)})}
+function loadImage(f){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('img'));i.src=URL.createObjectURL(f)})}
+function seek(v,t){return new Promise(res=>{let done=false;const h=()=>{if(done)return;done=true;v.removeEventListener('seeked',h);res()};v.addEventListener('seeked',h);v.currentTime=t;setTimeout(h,3000)})}
+function frameCanvas(src){const w0=src.videoWidth||src.naturalWidth,h0=src.videoHeight||src.naturalHeight,W=540,H=Math.round(h0*W/w0);const c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d',{willReadFrequently:true}).drawImage(src,0,0,W,H);return c}
+let origFile=null,convFile=null;
+async function openMedia(f,converted){file=f;$('#fileHint').textContent=f.name;$('#run').disabled=true;$('#runHint').textContent='Abrindo arquivo…';
+  const isVid=!f.type.startsWith('image/');$('#convRow').hidden=!isVid;$('#convBtn').hidden=!!converted;$('#convDl').hidden=!converted;
+  $('#convHint').textContent=converted?`Pronto: ${f.name} (${(f.size/1048576).toFixed(1).replace('.',',')} MB). A análise vai usar esta versão.`:'Vídeo do iPhone em HEVC (H.265)? Se não abrir aqui, ou para compartilhar, converta para MP4 (H.264) no próprio aparelho.';
+  try{if(!isVid){media={kind:'img',el:await loadImage(f)}}else{const v=await loadVideo(f);media={kind:'vid',el:v,dur:v.duration};await seek(v,Math.min(v.duration/2,5))}
+    preview=frameCanvas(media.el);$('#cropBox').hidden=false;drawCrop();$('#run').disabled=false;
+    $('#runHint').textContent=media.kind==='vid'?`${Math.max(1,Math.min(30,Math.floor(media.dur)))} quadros serão analisados.`:'1 imagem será analisada.';
+    $('#saveName').value=''}
+  catch(err){media=null;$('#cropBox').hidden=true;
+    if(isVid&&!converted){$('#convHint').textContent='Este navegador não abre o vídeo (provavelmente HEVC/H.265, padrão do iPhone). Converta para MP4 aqui mesmo para analisar.';$('#runHint').textContent='Toque em "Converter para MP4".'}
+    else $('#runHint').textContent='Não consegui abrir este arquivo.'}}
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;origFile=f;convFile=null;openMedia(f,false)};
+$('#convBtn').onclick=async()=>{if(!origFile)return;const b=$('#convBtn');b.disabled=true;$('#run').disabled=true;$('#convProg').hidden=false;const bar=$('#convProg i');bar.style.width='0';
+  try{convFile=await convertVideo(origFile,t=>$('#convHint').textContent=t,p=>{const q=Math.round(Math.min(1,Math.max(0,p))*100);bar.style.width=q+'%';$('#convHint').textContent=`Convertendo… ${q}%`});
+    bar.style.width='100%';await openMedia(convFile,true)}
+  catch(e){$('#convHint').textContent=e&&e.message==='ffget'?'Não consegui baixar o conversor. Verifique a internet e tente de novo.':'A conversão falhou. O arquivo pode estar corrompido ou ser grande demais para a memória do aparelho.'}
+  b.disabled=false;setTimeout(()=>$('#convProg').hidden=true,800)};
+$('#convDl').onclick=async()=>{if(!convFile)return;try{const st=await saveFile(convFile.name,convFile,convFile.type);if(st==='saved')toast('Vídeo salvo');else if(st==='unavailable')toast('Baixar arquivos não está disponível nesta visualização.')}catch(e){toast('Não foi possível salvar o vídeo.')}};
+
+/* ---------- conversor de vídeo (ffmpeg.wasm, roda no aparelho) ---------- */
+const FF_PARTS=['ff/core.wasm.0','ff/core.wasm.1','ff/core.wasm.2'];
+let ffW=null,ffReady=null,ffSeq=0;const ffCb={};
+function ffCall(msg,tr){return new Promise((res,rej)=>{const id=++ffSeq;ffCb[id]={res,rej};ffW.postMessage(Object.assign({id},msg),tr||[])})}
+function ffLoad(onStage){if(ffReady)return ffReady;ffReady=(async()=>{
+    onStage&&onStage('Baixando o conversor (cerca de 32 MB, só na primeira vez)…');
+    const bufs=await Promise.all(FF_PARTS.map(u=>fetch(u).then(r=>{if(!r.ok)throw new Error('ffget');return r.arrayBuffer()}).catch(()=>{throw new Error('ffget')})));
+    let n=0;bufs.forEach(b=>n+=b.byteLength);const wasm=new Uint8Array(n);let o=0;bufs.forEach(b=>{wasm.set(new Uint8Array(b),o);o+=b.byteLength});
+    onStage&&onStage('Preparando o conversor…');
+    ffW=new Worker('ff/ffworker.js');
+    ffW.onmessage=e=>{const m=e.data;if(m.type==='progress'){if(ffCb.progress)ffCb.progress(m.p);return}const cb=ffCb[m.id];if(cb){delete ffCb[m.id];m.error?cb.rej(new Error(m.error)):cb.res(m)}};
+    ffW.onerror=()=>{for(const k in ffCb)if(ffCb[k]&&ffCb[k].rej){ffCb[k].rej(new Error('worker'));delete ffCb[k]}};
+    await ffCall({type:'load',wasm:wasm.buffer},[wasm.buffer]);return true})();
+  ffReady.catch(()=>{ffReady=null;if(ffW){ffW.terminate();ffW=null}});return ffReady}
+async function convertVideo(f,onStage,onProg){
+  await ffLoad(onStage);
+  const mp4=!!document.createElement('video').canPlayType('video/mp4; codecs="avc1.42E01E"');
+  const ext=(f.name.match(/\.([a-z0-9]+)$/i)||[,'mov'])[1].toLowerCase(),inName='entrada.'+ext,out=mp4?'saida.mp4':'saida.webm';
+  const args=mp4?['-i',inName,'-vf','scale=min(720\\,iw):-2','-c:v','libx264','-preset','ultrafast','-crf','23','-pix_fmt','yuv420p','-an','-movflags','+faststart',out]
+                :['-i',inName,'-vf','scale=min(720\\,iw):-2','-c:v','libvpx','-deadline','realtime','-cpu-used','8','-b:v','2M','-an',out];
+  onStage&&onStage('Convertendo… 0%');ffCb.progress=onProg;
+  try{const data=new Uint8Array(await f.arrayBuffer());const r=await ffCall({type:'exec',input:data,inName,args,out},[data.buffer]);
+    const base=f.name.replace(/\.[^.]+$/,'');return new File([r.output],base+(mp4?'_h264.mp4':'_vp8.webm'),{type:mp4?'video/mp4':'video/webm'})}
+  finally{ffCb.progress=null}}
+
+function crop(){const g=id=>+$('#'+id).value/100;let t=g('cT'),b=g('cB'),l=g('cL'),r=g('cR');if(b<=t+0.05)b=Math.min(1,t+0.05);if(r<=l+0.05)r=Math.min(1,l+0.05);return{t,b,l,r}}
+function drawCrop(){if(!preview)return;const c=$('#cropCv');c.width=preview.width;c.height=preview.height;const x=c.getContext('2d');x.drawImage(preview,0,0);const k=crop(),W=c.width,H=c.height;
+  x.fillStyle='rgba(0,0,0,.55)';x.fillRect(0,0,W,k.t*H);x.fillRect(0,k.b*H,W,H-k.b*H);x.fillRect(0,k.t*H,k.l*W,(k.b-k.t)*H);x.fillRect(k.r*W,k.t*H,W-k.r*W,(k.b-k.t)*H);
+  x.strokeStyle='#f0a12a';x.lineWidth=3;x.strokeRect(k.l*W,k.t*H,(k.r-k.l)*W,(k.b-k.t)*H)}
+['cT','cB','cL','cR'].forEach(id=>$('#'+id).oninput=drawCrop);
+
+/* ---------- análise ---------- */
+$('#run').onclick=async()=>{if(!media)return;const btn=$('#run');btn.disabled=true;$('#prog').hidden=false;const bar=$('#prog i');bar.style.width='0';
+  const sfc=surfOf($('#surf').value),belt=!!sfc.escuro,k=crop();const times=[];
+  if(media.kind==='vid'){const n=Math.max(1,Math.min(30,Math.floor(media.dur)));for(let i=0;i<n;i++)times.push(Math.min(media.dur-0.05,n===1?media.dur/2:i+0.5))}else times.push(0);
+  const acc={};let keep=null;
+  for(let i=0;i<times.length;i++){$('#runHint').textContent=`Analisando quadro ${i+1} de ${times.length}…`;
+    if(media.kind==='vid')await seek(media.el,times[i]);
+    const c=frameCanvas(media.el),W=c.width,H=c.height,x0=Math.round(k.l*W),y0=Math.round(k.t*H),w=Math.round((k.r-k.l)*W),h=Math.round((k.b-k.t)*H);
+    const img=c.getContext('2d').getImageData(x0,y0,w,h);
+    await new Promise(r=>setTimeout(r,0));
+    const out=classifyFrame(img.data,w,h,belt);
+    for(const key in out.pct)(acc[key]=acc[key]||[]).push(out.pct[key]);
+    if(i===Math.floor(times.length/2))keep={img,code:out.code,w,h};
+    bar.style.width=((i+1)/times.length*100)+'%'}
+  const avg=key=>acc[key].reduce((a,b)=>a+b,0)/acc[key].length;
+  const res={incolor_limpo:avg('incolor_limpo'),incolor_sujo:avg('incolor_sujo'),cinza_limpo:avg('cinza_limpo'),cinza_sujo:avg('cinza_sujo'),branco:avg('branco'),verde:avg('verde'),azul_vermelho:avg('azul')+avg('vermelho'),quadros:times.length,superficie:sfc.nome};
+  lastRes=res;const d=$('#dt').value;
+  lastCtx={equipamento:eq,data:d,superficie:sfc.nome,ponto:$('#pt').value,arquivo:(convFile&&file===convFile&&origFile)?`${origFile.name} (convertido para ${file.name.endsWith('.mp4')?'MP4':'WebM'})`:file.name,recorte:`topo ${Math.round(k.t*100)}%, base ${Math.round(k.b*100)}%, esq. ${Math.round(k.l*100)}%, dir. ${Math.round(k.r*100)}%`};
+  renderResult(res,`${eq} · ${d.slice(8,10)}/${d.slice(5,7)}`,`${times.length} quadro${times.length>1?'s':''} · ${sfc.nome.toLowerCase()} · ${file.name}`);
+  drawOverlay(keep);$('#ovBox').hidden=false;$('#saveRow').hidden=false;$('#repBox').hidden=false;
+  $('#saveName').value=suggestName();
+  $('#runHint').textContent='Pronto. Confira o quadro classificado e salve.';btn.disabled=false;setTimeout(()=>$('#prog').hidden=true,600);
+  $('#resCard').scrollIntoView({behavior:'smooth',block:'start'})};
+function suggestName(){const d=$('#dt').value.replace(/-/g,'');const same=records.filter(r=>r.equipamento===eq&&r.data===$('#dt').value).length;return `${eq}_${d}${same?same+1:''}`}
+const r1=v=>Math.round((+v||0)*10)/10; // compara o mesmo valor que aparece na tela (1 casa)
+function status(r){const cz=(r.cinza_limpo||0)+(r.cinza_sujo||0);const out=[];
+  // aprovado só quando o valor é MENOR que o limite; igual ou acima gera alerta
+  out.push(r1(cz)>=thr.cz?['bad','Cinza '+fmt(cz)]:null);out.push(r1(r.branco)>=thr.br?['bad','Branco '+fmt(r.branco)]:null);out.push(r1(r.incolor_sujo)>=thr.is?['warn','Incolor sujo '+fmt(r.incolor_sujo)]:null);
+  const f=out.filter(Boolean);return f.length?f:[['ok','Dentro dos limites']]}
+function pills(r){return status(r).map(([c,t])=>`<span class="pill ${c}">${esc(t)}</span>`).join('')}
+function renderResult(r,title,sub){$('#resTitle').textContent=title;$('#resSub').textContent=sub;$('#resPills').innerHTML=pills(r);
+  $('#resBars').innerHTML=CL.map(c=>`<div class="bar"><span><span class="sw" style="background:var(${c.v})"></span>${c.n}</span><div class="track"><div class="fill" style="width:${Math.min(100,c.k==='incolor_limpo'?r[c.k]:r[c.k]*4)}%;background:var(${c.v})"></div></div><span class="num">${fmt(r[c.k])}</span></div>`).join('')+
+   '<div class="hint">Incolor limpo em escala 0–100%; demais classes ampliadas 4× (escala 0–25%).</div>';
+  const cz=r.cinza_limpo+r.cinza_sujo,ct=r.branco+r.verde+r.azul_vermelho;
+  $('#resDest').innerHTML=[[r.incolor_limpo,'Produto incolor pronto'],[r.incolor_sujo,'Recuperável com lavagem'],[cz,'Vidro cinza (vender como colorido)'],[ct,'Contaminantes (branco + cores)']].map(([v,t])=>`<div><b>${fmt(v)}</b><span>${t}</span></div>`).join('')}
+function drawOverlay(k){if(!k)return;const c=$('#ovCv');c.width=k.w;c.height=k.h;const x=c.getContext('2d');
+  if(ovMode==='orig'){x.putImageData(k.img,0,0);return}
+  const o=new ImageData(new Uint8ClampedArray(k.img.data),k.w,k.h);for(let i=0;i<k.code.length;i++){const col=OVC[k.code[i]];if(col){o.data[4*i]=col[0];o.data[4*i+1]=col[1];o.data[4*i+2]=col[2]}}x.putImageData(o,0,0)}
+let keepOv=null;const _do=drawOverlay;drawOverlay=k=>{keepOv=k;_do(k)};
+$('#ovA').onclick=()=>{ovMode='cls';$('#ovA').setAttribute('aria-pressed','true');$('#ovB').setAttribute('aria-pressed','false');_do(keepOv)};
+$('#ovB').onclick=()=>{ovMode='orig';$('#ovB').setAttribute('aria-pressed','true');$('#ovA').setAttribute('aria-pressed','false');_do(keepOv)};
+$('#ovLegend').innerHTML=[['Incolor sujo',[240,205,30]],['Cinza limpo',[225,35,35]],['Cinza sujo',[255,135,0]],['Branco',[255,0,255]],['Verde',[0,225,0]],['Azul/verm.',[40,70,255]],['Correia',[45,45,45]]].map(([n,c])=>`<span><span class="sw" style="background:rgb(${c})"></span>${n}</span>`).join('')+'<span>sem cor = incolor limpo</span>';
+
+/* ---------- salvar ---------- */
+$('#save').onclick=async()=>{if(!lastRes||!store)return;const name=($('#saveName').value||suggestName()).trim();
+  const c0=lastCtx||{equipamento:eq,data:$('#dt').value};
+  const rec=Object.assign({video:name,equipamento:c0.equipamento,data:c0.data,ponto:c0.ponto||'',recorte:c0.recorte||'',arquivo:c0.arquivo||'',origem:'app',criadoEm:new Date().toISOString()},roundRec(lastRes));
+  $('#save').disabled=true;try{await store.add(rec);toast('Salvo no histórico');$('#saveRow').hidden=true;
+    if($('#saveImg').checked&&keepOv)saveFrame(keepOv,rec).then(ok=>{if(ok)toast('Análise e quadro salvos')}).catch(()=>toast('Análise salva, mas o quadro não foi guardado.'))}catch(e){toast(e&&e.code==='quota_exceeded'?'Histórico cheio: apague análises antigas.':'Não foi possível salvar. Você pode não ter permissão de edição.')}$('#save').disabled=false};
+function roundRec(r){const o={};for(const k in r)o[k]=typeof r[k]==='number'?Math.round(r[k]*100)/100:r[k];return o}
+
+/* ---------- histórico ---------- */
+function renderHist(){
+  const eqs=[...new Set(records.map(r=>r.equipamento))].sort();
+  const fs=$('#fSeg');fs.innerHTML='';['Todos',...eqs].forEach(e=>{const b=document.createElement('button');b.type='button';b.textContent=e;b.setAttribute('aria-pressed',String(e===filt));b.onclick=()=>{filt=e;renderHist()};fs.appendChild(b)});
+  const rs=records.filter(r=>filt==='Todos'||r.equipamento===filt).sort((a,b)=>(b.data+b.video).localeCompare(a.data+a.video));
+  const cards=$('#eqCards');
+  if(!records.length){cards.innerHTML='';$('#hList').innerHTML=`<div class="empty">Nenhuma análise salva ainda. Analise um vídeo na aba Analisar, ou importe um CSV.</div>`;return}
+  cards.innerHTML=(filt==='Todos'?eqs:[filt]).map(e=>{const g=records.filter(r=>r.equipamento===e);const a=k=>g.reduce((s,r)=>s+(r[k]||0),0)/g.length;
+    const av={};CL.forEach(c=>av[c.k]=a(c.k));const cz=av.cinza_limpo+av.cinza_sujo;
+    return `<div class="card eq"><h3>${esc(e)}<small>${g.length} análise${g.length>1?'s':''}</small></h3>${stackBar(av)}<div class="scale"><span>0%</span><span>fora do incolor limpo</span><span>25%</span></div>
+    <div class="kv"><span>Incolor limpo</span><span class="num">${fmt(av.incolor_limpo)}</span><span>Incolor sujo</span><span class="num">${fmt(av.incolor_sujo)}</span><span>Cinza (limpo + sujo)</span><span class="num">${fmt(cz)}</span><span>Branco opaco</span><span class="num">${fmt(av.branco)}</span></div><div class="row">${pills(av)}</div></div>`}).join('');
+  $('#hList').innerHTML=rs.map(r=>{const cz=(r.cinza_limpo||0)+(r.cinza_sujo||0);const dt=r.data?r.data.slice(8,10)+'/'+r.data.slice(5,7)+'/'+r.data.slice(0,4):'';
+    return `<div class="item" data-id="${esc(r._id)}"><div><div class="vid">${esc(r.video)}</div><div class="meta"><span>${esc(r.equipamento)}</span><span>${dt}</span><span>${r.quadros||'?'} quadros</span>${pills(r)}</div></div>
+    <div class="bigs">${fmt(r.incolor_limpo)}<br><span class="hint">incolor limpo</span></div>
+    <div class="full">${stackBar(r)}<div class="row" style="justify-content:space-between"><span class="hint">sujo ${fmt(r.incolor_sujo)} · cinza ${fmt(cz)} · branco ${fmt(r.branco)} · cores ${fmt((r.verde||0)+(r.azul_vermelho||0))}</span><span class="del row" style="gap:6px"><button class="btn ghost small" data-act="rep">Relatório</button><button class="btn ghost small" data-act="ask">Apagar</button></span></div></div></div>`}).join('');
+  $('#hList').querySelectorAll('[data-act="rep"]').forEach(b=>b.onclick=()=>repFromHist(b.closest('.item').dataset.id,b));
+  $('#hList').querySelectorAll('[data-act="ask"]').forEach(b=>b.onclick=()=>{const sp=b.parentElement,id=b.closest('.item').dataset.id;
+    sp.innerHTML=`<span class="confirm">Apagar esta análise? <button class="btn small" data-act="yes">Apagar</button><button class="btn ghost small" data-act="no">Cancelar</button></span>`;
+    sp.querySelector('[data-act="no"]').onclick=renderHist;sp.querySelector('[data-act="yes"]').onclick=async()=>{try{await store.del(id);toast('Análise apagada')}catch(e){toast('Não foi possível apagar.')}}})}
+function stackBar(r){const parts=CL.filter(c=>c.k!=='incolor_limpo').map(c=>`<span title="${c.n} ${fmt(r[c.k])}" style="width:${Math.min(100,(r[c.k]||0)*4)}%;background:var(${c.v})"></span>`).join('');return `<div class="stack">${parts}</div>`}
+
+/* ---------- CSV ---------- */
+const COLS=['video','equipamento','data','quadros','incolor_limpo','incolor_sujo','cinza_limpo','cinza_sujo','branco','verde','azul_vermelho'];
+function toCSV(rs){return [COLS.join(';')].concat(rs.map(r=>COLS.map(c=>{const v=r[c];return typeof v==='number'?String(v).replace('.',','):String(v??'').replace(/;/g,',')}).join(';'))).join('\n')}
+$('#exp').onclick=async()=>{if(!records.length){toast('Nada para exportar ainda.');return}const csv='﻿'+toCSV([...records].sort((a,b)=>(a.data+a.video).localeCompare(b.data+b.video)));const name='triagem_vidro_'+new Date().toISOString().slice(0,10)+'.csv';
+  try{const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+    if(dl){await dl.save({filename:name,data:csv});toast('Arquivo exportado');return}
+    if(!window.claude){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=name;a.click();return}
+    toast('Exportar não está disponível nesta visualização.')}catch(e){if(e&&e.code!=='declined')toast('Não foi possível exportar.')}};
+$('#imp').onclick=()=>$('#impFile').click();
+$('#impFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const txt=(await f.text()).replace(/^﻿/,'');const lines=txt.split(/\r?\n/).filter(Boolean);const sep=lines[0].includes(';')?';':',';const hd=lines[0].split(sep).map(s=>s.trim().toLowerCase());
+  let n=0;for(const ln of lines.slice(1)){const cells=ln.split(sep);const r={origem:'importado',criadoEm:new Date().toISOString()};hd.forEach((h,i)=>{if(!COLS.includes(h))return;const v=(cells[i]||'').trim();r[h]=['video','equipamento','data'].includes(h)?v:parseFloat(v.replace(',','.'))});
+    if(!r.video||records.some(x=>x.video===r.video))continue;try{await store.add(r);n++}catch(err){toast('Importação interrompida: sem permissão ou histórico cheio.');break}}
+  toast(n?`${n} análise${n>1?'s':''} importada${n>1?'s':''}`:'Nenhuma análise nova no arquivo.');e.target.value=''};
+
+/* ---------- limites ---------- */
+[['tCz','cz'],['tBr','br'],['tIs','is']].forEach(([id,k])=>{const el=$('#'+id);el.value=thr[k];el.onchange=()=>{thr[k]=parseFloat(el.value)||0;ls.set('tg_thr',thr);if(lastRes)$('#resPills').innerHTML=pills(lastRes)}});
+
+/* ---------- exemplo inicial ---------- */
+const EX={incolor_limpo:79.16,incolor_sujo:5.36,cinza_limpo:0.25,cinza_sujo:8.97,branco:4.02,verde:2.12,azul_vermelho:0.1};
+renderResult(EX,'Exemplo: CV24 · 15/10','Resultado de uma análise já feita, para mostrar o formato. Envie um vídeo para analisar.');
+
+/* ---------- módulo de imagens ---------- */
+let imgs=[],imgStore=null,imgDocs=null,canUpload=false,queue=[],iTipo='Quadro da linha',iEq='CV24',gTipo='Todos',busy=false;
+const srcCache={};
+const idb={p:null,open(){return this.p||(this.p=new Promise((res,rej)=>{const r=indexedDB.open('triagem',1);r.onupgradeneeded=()=>r.result.createObjectStore('blobs');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))},
+  async run(mode,fn){const d=await this.open();return new Promise((res,rej)=>{const t=d.transaction('blobs',mode),q=fn(t.objectStore('blobs'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})}};
+function srcOf(doc){if(imgStore&&imgStore.kind==='db')return '/_blob/'+doc.assetId;if(imgStore&&imgStore.kind==='net')return imgStore.url(doc.assetId);return srcCache[doc.assetId]||''}
+async function fillLocalSrc(root){if(!imgStore||imgStore.kind!=='local')return;for(const el of root.querySelectorAll('img[data-aid]')){if(el.getAttribute('src'))continue;const u=await imgStore.src(el.dataset.aid);if(u)el.src=u}}
+
+$('#iDt').value=$('#dt').value;
+function renderPontos(){['#iPonto','#pt'].forEach(id=>{const sel=$(id),cur=sel.value;sel.innerHTML='<option value="">Não informado</option>'+cfg.pontos.map(p=>`<option>${esc(p)}</option>`).join('');sel.value=cfg.pontos.includes(cur)?cur:''})}
+renderPontos();
+function renderClasses(){const sel=$('#iClasse'),cur=sel.value;sel.innerHTML=cfg.classes.map(c=>`<option>${esc(c)}</option>`).join('');sel.value=cfg.classes.includes(cur)?cur:cfg.classes[0]}
+renderClasses();
+function renderIEq(){const s=$('#iEqSeg');s.innerHTML='';const codes=cfg.equipamentos.map(x=>x.codigo);if(!codes.includes(iEq))iEq=codes[0];
+  codes.forEach(e=>{const b=document.createElement('button');b.type='button';b.textContent=e;b.setAttribute('aria-pressed',String(e===iEq));b.onclick=()=>{iEq=e;renderIEq()};s.appendChild(b)});s.appendChild(newBtn())}
+function setITipo(n){iTipo=n;const ref=tipoBase(n)==='referencia';$('#iClasseF').hidden=!ref;$('#iCompF').hidden=ref;
+  $('#iTipoHint').textContent=ref?'Peças separadas de uma só classe, fotografadas sobre fundo neutro. Servem para calibrar e treinar o modelo.':'Foto do material passando no equipamento. Pode ter a composição calculada.';
+  $('#iTipoSeg').querySelectorAll('button[data-t]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.t===n)))}
+function renderITipo(){const s=$('#iTipoSeg');s.innerHTML='';if(!cfg.tipos.some(t=>t.nome===iTipo))iTipo=cfg.tipos[0].nome;
+  cfg.tipos.forEach(t=>{const b=document.createElement('button');b.type='button';b.dataset.t=t.nome;b.textContent=t.nome;b.onclick=()=>{setITipo(t.nome);if(t.base==='referencia'&&cfg.equipamentos.some(e=>e.codigo==='Bancada')&&iEq!=='Bancada'){iEq='Bancada';renderIEq()}};s.appendChild(b)});
+  s.appendChild(newBtn());setITipo(iTipo)}
+renderIEq();renderITipo();
+
+function toJpeg(src,maxSide,q){const w0=src.videoWidth||src.naturalWidth||src.width,h0=src.videoHeight||src.naturalHeight||src.height;const s=Math.min(1,maxSide/Math.max(w0,h0));
+  const c=document.createElement('canvas');c.width=Math.round(w0*s);c.height=Math.round(h0*s);c.getContext('2d').drawImage(src,0,0,c.width,c.height);
+  return new Promise(res=>c.toBlob(b=>res({blob:b,w:c.width,h:c.height}),'image/jpeg',q))}
+function renderQueue(){const q=$('#iQueue');q.innerHTML=queue.map((it,i)=>`<div class="qi"><img src="${it.thumb}" alt="${esc(it.name)}"><span class="st ${it.state==='ok'?'ok':it.state==='err'?'err':''}">${esc(it.msg||it.name)}</span>${busy||it.state==='ok'?'':`<button type="button" data-i="${i}" aria-label="Remover ${esc(it.name)}">×</button>`}</div>`).join('');
+  q.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{queue.splice(+b.dataset.i,1);renderQueue()});
+  const pend=queue.filter(x=>x.state!=='ok').length;$('#iSend').disabled=busy||!pend||!canUpload;
+  $('#iHint').textContent=!canUpload?'Sem permissão para enviar.':pend?`${pend} ${pend>1?'imagens':'imagem'} na fila.`:'Nenhuma imagem na fila.';
+  $('#iSend').textContent=pend?`Enviar ${pend} ${pend>1?'imagens':'imagem'}`:'Enviar imagens'}
+$('#iFile').onchange=async e=>{const files=[...e.target.files];e.target.value='';if(!files.length)return;$('#iHint').textContent='Preparando…';
+  for(const f of files){const base=f.name.replace(/\.[^.]+$/,'');
+    try{if(f.type.startsWith('video/')||/\.(mov|hevc|mkv)$/i.test(f.name)){let v;try{v=await loadVideo(f)}catch(err){
+          const cf=await convertVideo(f,t=>$('#iHint').textContent=t,p=>$('#iHint').textContent=`Convertendo ${f.name} (HEVC → MP4)… ${Math.round(Math.min(1,Math.max(0,p))*100)}%`);v=await loadVideo(cf)}
+        const n=Math.max(1,Math.min(30,parseInt($('#iFr').value)||5));
+        for(let k=0;k<n;k++){await seek(v,Math.min(v.duration-0.05,(k+0.5)*v.duration/n));const j=await toJpeg(v,1600,0.85);queue.push({name:`${base}_q${String(k+1).padStart(2,'0')}`,blob:j.blob,w:j.w,h:j.h,thumb:URL.createObjectURL(j.blob),state:'new'})}}
+      else{const im=await loadImage(f);const j=await toJpeg(im,1600,0.85);queue.push({name:base,blob:j.blob,w:j.w,h:j.h,thumb:URL.createObjectURL(j.blob),state:'new'})}}
+    catch(err){toast(`Não consegui abrir ${f.name}.`)}}
+  renderQueue()};
+async function composicao(blob,eqv){const im=await loadImage(blob);const c=frameCanvas(im);const d=c.getContext('2d').getImageData(0,0,c.width,c.height);
+  const p=classifyFrame(d.data,c.width,c.height,!!eqSurf(eqv).escuro).pct;
+  return roundRec({incolor_limpo:p.incolor_limpo,incolor_sujo:p.incolor_sujo,cinza_limpo:p.cinza_limpo,cinza_sujo:p.cinza_sujo,branco:p.branco,verde:p.verde,azul_vermelho:p.azul+p.vermelho})}
+const UPERR={too_large:'arquivo grande demais',quota_or_state:'espaço do banco esgotado',rate_limited:'muitos envios seguidos; tente em instantes',unsupported_type:'formato não aceito',not_granted:'sem permissão',upstream_auth:'recarregue a página e entre de novo'};
+$('#iSend').onclick=async()=>{if(busy||!canUpload)return;busy=true;$('#iProg').hidden=false;const bar=$('#iProg i');const todo=queue.filter(x=>x.state!=='ok');let done=0,okN=0;renderQueue();
+  const base=tipoBase(iTipo);const meta={tipo:iTipo,base,classe:base==='referencia'?$('#iClasse').value:'',equipamento:iEq,data:$('#iDt').value,ponto:$('#iPonto').value,obs:$('#iObs').value.trim()};
+  for(const it of todo){it.msg='enviando…';renderQueue();
+    try{const comp=(base==='linha'&&$('#iComp').checked)?await composicao(it.blob,iEq):null;
+      const id=await imgStore.put(it.blob);
+      await imgDocs.add(Object.assign({assetId:id,nome:it.name,largura:it.w,altura:it.h,bytes:it.blob.size,composicao:comp,origem:'upload',criadoEm:new Date().toISOString()},meta));
+      it.state='ok';it.msg='enviada';okN++}
+    catch(e){it.state='err';it.msg=UPERR[e&&e.code]||'falhou';if(e&&['quota_or_state','not_granted','upstream_auth','rate_limited'].includes(e.code)){toast('Envio interrompido: '+it.msg+'.');break}}
+    done++;bar.style.width=(done/todo.length*100)+'%'}
+  busy=false;queue=queue.filter(x=>x.state!=='ok');renderQueue();setTimeout(()=>$('#iProg').hidden=true,600);
+  if(okN)toast(`${okN} ${okN>1?'imagens':'imagem'} no banco`);updateUsage()};
+async function saveFrame(k,rec){if(!canUpload)return false;const c=document.createElement('canvas');c.width=k.w;c.height=k.h;c.getContext('2d').putImageData(k.img,0,0);
+  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.88));const id=await imgStore.put(blob);
+  const comp={};CL.forEach(x=>comp[x.k]=rec[x.k]);
+  await imgDocs.add({assetId:id,nome:rec.video+'_quadro',tipo:(cfg.tipos.find(t=>t.base==='linha')||{nome:'Quadro da linha'}).nome,base:'linha',classe:'',equipamento:rec.equipamento,data:rec.data,ponto:'',obs:'Quadro central da análise '+rec.video,largura:k.w,altura:k.h,bytes:blob.size,composicao:comp,origem:'analise',analise:rec.video,criadoEm:new Date().toISOString()});
+  return true}
+
+function renderGal(){
+  const tnames=[...new Set([...cfg.tipos.map(t=>t.nome),...imgs.map(d=>tipoNome(d.tipo))])];if(gTipo!=='Todos'&&!tnames.includes(gTipo))gTipo='Todos';
+  const ts=$('#gTipo');ts.innerHTML='';[['Todos','Todos'],...tnames.map(n=>[n,n])].forEach(([v,n])=>{const b=document.createElement('button');b.type='button';b.textContent=n;b.setAttribute('aria-pressed',String(v===gTipo));b.onclick=()=>{gTipo=v;renderGal()};ts.appendChild(b)});
+  const eqs=[...new Set(imgs.map(d=>d.equipamento).filter(Boolean))].sort();const cur=$('#gEq').value||'Todos';
+  $('#gEq').innerHTML=['Todos',...eqs].map(e=>`<option ${e===cur?'selected':''}>${esc(e)}</option>`).join('');
+  const list=imgs.filter(d=>(gTipo==='Todos'||tipoNome(d.tipo)===gTipo)&&(cur==='Todos'||d.equipamento===cur)).sort((a,b)=>(b.criadoEm||'').localeCompare(a.criadoEm||''));
+  const refs=imgs.filter(isRef),cnt={};refs.forEach(d=>cnt[d.classe]=(cnt[d.classe]||0)+1);
+  $('#gCounts').innerHTML=`<span>Total<b>${imgs.length}</b></span><span>Linha<b>${imgs.length-refs.length}</b></span>`+[...cfg.classes,...Object.keys(cnt).filter(c=>!cfg.classes.includes(c))].filter(c=>cnt[c]).map(c=>`<span>${esc(c)}<b>${cnt[c]}</b></span>`).join('');
+  if(!list.length){$('#gal').innerHTML=`<div class="empty" style="grid-column:1/-1">${imgs.length?'Nenhuma imagem com esses filtros.':'O banco está vazio. Envie fotos acima, ou salve uma análise com a opção de guardar o quadro.'}</div>`;return}
+  $('#gal').innerHTML=list.map(d=>{const s=srcOf(d);const c=d.composicao;const dt=d.data?d.data.slice(8,10)+'/'+d.data.slice(5,7):'';
+    return `<button class="gi" data-id="${esc(d._id)}"><div class="ph"><img loading="lazy" alt="${esc(d.nome)}" ${s?`src="${s}"`:''} data-aid="${esc(d.assetId)}"></div>
+    <div class="cap"><b>${esc(d.nome)}</b><span>${isRef(d)?`<span class="tag ref">${esc(d.classe)}</span>`:`${esc(d.equipamento)} · ${dt}${c?' · '+fmt(c.incolor_limpo)+' IL':''}`}</span></div></button>`}).join('');
+  $('#gal').querySelectorAll('.gi').forEach(b=>b.onclick=()=>openImg(b.dataset.id));
+  fillLocalSrc($('#gal'))}
+window.__renderGal=renderGal;
+$('#gEq').onchange=renderGal;
+async function openImg(id){const d=imgs.find(x=>x._id===id);if(!d)return;
+  $('#mTitle').textContent=d.nome;const im=$('#mImg');im.alt=d.nome;im.src=srcOf(d)||(imgStore&&imgStore.kind==='local'?await imgStore.src(d.assetId):'');
+  const dt=d.data?d.data.slice(8,10)+'/'+d.data.slice(5,7)+'/'+d.data.slice(0,4):'–';
+  $('#mKv').innerHTML=[['Tipo',tipoNome(d.tipo)],d.classe?['Classe',d.classe]:null,['Equipamento',d.equipamento],['Data',dt],['Ponto da linha',d.ponto||'–'],['Tamanho',`${d.largura}×${d.altura} px · ${Math.round((d.bytes||0)/1024)} KB`],d.analise?['Análise',d.analise]:null,d.obs?['Observação',d.obs]:null].filter(Boolean).map(([k,v])=>`<span class="hint">${k}</span><span>${esc(v)}</span>`).join('');
+  const c=d.composicao;$('#mBars').innerHTML=c?CL.map(x=>`<div class="bar"><span><span class="sw" style="background:var(${x.v})"></span>${x.n}</span><div class="track"><div class="fill" style="width:${Math.min(100,x.k==='incolor_limpo'?c[x.k]:c[x.k]*4)}%;background:var(${x.v})"></div></div><span class="num">${fmt(c[x.k])}</span></div>`).join(''):'';
+  const act=$('#mAct');act.innerHTML=canUpload?'<button class="btn ghost small" id="mDel">Apagar imagem</button>':'';
+  if(canUpload)$('#mDel').onclick=()=>{act.innerHTML='<span class="confirm">Apagar do banco? Não dá para desfazer. <button class="btn small" id="mYes">Apagar</button><button class="btn ghost small" id="mNo">Cancelar</button></span>';
+    $('#mNo').onclick=()=>openImg(id);$('#mYes').onclick=async()=>{try{if(!imgs.some(x=>x._id!==d._id&&x.assetId===d.assetId))await imgStore.del(d.assetId);await imgDocs.del(d._id);closeModal();toast('Imagem apagada');updateUsage()}catch(e){toast(e&&e.code==='not_uploader'?'Só quem enviou (ou um editor) pode apagar esta imagem.':'Não foi possível apagar.')}}};
+  $('#iModal').hidden=false;$('#mClose').focus()}
+function closeModal(){$('#iModal').hidden=true}
+$('#mClose').onclick=closeModal;$('#iModal').onclick=e=>{if(e.target.id==='iModal')closeModal()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+$('#iExp').onclick=async()=>{if(!imgs.length){toast('O banco está vazio.');return}
+  const cols=['nome','tipo','referencia','classe','equipamento','data','ponto','largura','altura','arquivo',...CL.map(c=>c.k),'analise','obs'];
+  const base=imgStore&&imgStore.kind==='db'?location.origin+'/_blob/':imgStore&&imgStore.kind==='net'?new URL('api/blob/',location.href).href:'';
+  const rows=imgs.map(d=>cols.map(c=>{let v=c==='arquivo'?(base?base+d.assetId:d.assetId):c==='tipo'?tipoNome(d.tipo):c==='referencia'?(isRef(d)?'sim':'não'):(d.composicao&&c in d.composicao)?d.composicao[c]:d[c];return typeof v==='number'?String(v).replace('.',','):String(v??'').replace(/[;\n]/g,',')}).join(';'));
+  const csv='﻿'+[cols.join(';'),...rows].join('\n'),name='banco_imagens_'+new Date().toISOString().slice(0,10)+'.csv';
+  try{const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+    if(dl){await dl.save({filename:name,data:csv});toast('Catálogo exportado');return}
+    if(!window.claude){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=name;a.click();return}
+    toast('Exportar não está disponível nesta visualização.')}catch(e){if(e&&e.code!=='declined')toast('Não foi possível exportar.')}};
+let assetsNs=null;
+async function updateUsage(){if(!assetsNs){$('#iUsage').textContent='';return}try{const u=(await assetsNs.list()).usage;$('#iUsage').textContent=`${(u.bytes/1048576).toFixed(1).replace('.',',')} de ${Math.round(u.maxBytes/1048576)} MB`}catch(e){}}
+/* ---------- importar catálogo CSV do banco de imagens ---------- */
+const IC_COLS=['nome','tipo','referencia','classe','equipamento','data','ponto','obs','analise','arquivo',...CL.map(c=>c.k)];
+let icRows=[],icFiles={},icBusy=false;
+const normH=h=>h.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,'_');
+function parseCSV(txt){txt=txt.replace(/^\ufeff/,'');const first=txt.split(/\r?\n/)[0]||'';const sep=(first.match(/;/g)||[]).length>=(first.match(/,/g)||[]).length?';':',';
+  const rows=[];let row=[],f='',q=false;for(let i=0;i<txt.length;i++){const ch=txt[i];
+    if(q){if(ch==='"'){if(txt[i+1]==='"'){f+='"';i++}else q=false}else f+=ch}
+    else if(ch==='"')q=true;else if(ch===sep){row.push(f);f=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&txt[i+1]==='\n')i++;row.push(f);f='';if(row.some(x=>x.trim()))rows.push(row);row=[]}else f+=ch}
+  row.push(f);if(row.some(x=>x.trim()))rows.push(row);return rows}
+const toIsoDate=v=>{v=(v||'').trim();let m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;m=v.match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[0]:''};
+const numBR=v=>{v=String(v||'').trim().replace('%','');if(!v)return null;const n=parseFloat(v.replace(/\./g,v.includes(',')?'':'.').replace(',','.'));return isNaN(n)?null:n};
+function assetIdFrom(a){a=(a||'').trim();if(!a)return '';const m=a.match(/(?:_blob|api\/blob)\/([A-Za-z0-9_-]+)/);if(m)return m[1];return /^[A-Za-z0-9_-]{6,80}$/.test(a)?a:''}
+async function assetExists(id){if(!id||!imgStore)return false;try{if(imgStore.kind==='local')return !!(await imgStore.src(id));const r=await fetch(srcOf({assetId:id}),{cache:'no-store'});return r.ok}catch(e){return false}}
+const baseName=n=>n.replace(/\.[^.]+$/,'').trim().toLowerCase();
+async function icAnalyze(){const list=$('#icList');if(!icRows.length){$('#icSum').textContent=Object.keys(icFiles).length?`${Object.keys(icFiles).length} fotos escolhidas. Agora escolha o CSV.`:'Nenhum arquivo escolhido.';list.innerHTML='';$('#icRun').disabled=true;return}
+  $('#icSum').textContent='Conferindo linhas…';
+  for(const r of icRows){r.foto=icFiles[baseName(r.nome)]||(r.arquivo?icFiles[baseName(r.arquivo.split('/').pop().split('?')[0])]:null)||null;
+    r.reuse='';if(!r.foto){const id=assetIdFrom(r.arquivo);if(id&&await assetExists(id))r.reuse=id}
+    r.dup=imgs.some(d=>d.nome===r.nome&&(!r.reuse||d.assetId===r.reuse));
+    r.ok=!!r.nome&&!r.dup&&(!!r.foto||!!r.reuse);
+    r.motivo=!r.nome?'sem nome':r.dup?'já existe no banco':r.foto?'foto escolhida':r.reuse?'arquivo já no banco':'foto não encontrada'}
+  const ok=icRows.filter(r=>r.ok).length,semFoto=icRows.filter(r=>!r.ok&&r.motivo==='foto não encontrada').length;
+  $('#icSum').textContent=`${icRows.length} linhas no CSV · ${ok} prontas para importar`+(semFoto?` · ${semFoto} sem foto (escolha as fotos com o mesmo nome)`:'');
+  list.innerHTML=icRows.map(r=>`<div class="crow"><span class="cname">${esc(r.nome||'(sem nome)')}</span><span class="cmeta">${esc(tipoNome(r.tipo))}${r.classe?' · '+esc(r.classe):''}${r.equipamento?' · '+esc(r.equipamento):''}</span><span class="pill ${r.ok?'ok':r.dup?'warn':'bad'}">${esc(r.motivo)}</span></div>`).join('');
+  $('#icRun').disabled=!ok||!canUpload||icBusy;$('#icRun').textContent=ok?`Importar ${ok} ${ok===1?'imagem':'imagens'}`:'Importar'}
+$('#icImpBtn').onclick=()=>{const b=$('#icBox');b.hidden=!b.hidden;if(!b.hidden&&!canUpload)$('#icSum').textContent='Importar exige permissão para enviar imagens.'};
+$('#icCancel').onclick=()=>{if(icBusy)return;$('#icBox').hidden=true;icRows=[];icFiles={};$('#icList').innerHTML='';$('#icSum').textContent='Nenhum arquivo escolhido.';$('#icRun').disabled=true};
+$('#icCsv').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  const rows=parseCSV(await f.text());if(rows.length<2){toast('O CSV está vazio.');return}
+  const hd=rows[0].map(normH);if(!hd.includes('nome')){toast('O CSV precisa de uma coluna "nome".');return}
+  const linhaT=(cfg.tipos.find(t=>t.base==='linha')||{nome:'Quadro da linha'}).nome,refT=(cfg.tipos.find(t=>t.base==='referencia')||{nome:'Amostra de referência'}).nome;
+  icRows=rows.slice(1).map(cells=>{const o={};hd.forEach((h,i)=>{if(IC_COLS.includes(h))o[h]=(cells[i]||'').trim()});
+    const ref=/^(sim|s|yes|1|true)$/i.test(o.referencia||'')||(!o.tipo&&!!o.classe)||(o.tipo&&tipoBase(o.tipo)==='referencia');
+    const comp={};let has=false;CL.forEach(c=>{const n=numBR(o[c.k]);if(n!=null){comp[c.k]=n;has=true}});
+    return {nome:o.nome||'',tipo:o.tipo||(ref?refT:linhaT),base:ref?'referencia':'linha',classe:ref?(o.classe||''):'',equipamento:o.equipamento||'',data:toIsoDate(o.data),ponto:o.ponto||'',obs:o.obs||'',analise:o.analise||'',arquivo:o.arquivo||'',comp:has?comp:null}});
+  await icAnalyze()};
+$('#icFotos').onchange=async e=>{icFiles={};[...e.target.files].forEach(f=>icFiles[baseName(f.name)]=f);e.target.value='';await icAnalyze()};
+$('#icModel').onclick=async()=>{const cols=['nome','tipo','classe','equipamento','data','ponto','obs'];
+  const ex=[['IMG_2201','Amostra de referência','Cinza sujo','Bancada','27/10/2026','','5 peças sobre papel branco'],['IMG_2202','Quadro da linha','','CV24','27/10/2026','Entrada da linha','luz da manhã']];
+  const csv='\ufeff'+[cols.join(';'),...ex.map(r=>r.join(';'))].join('\n');
+  try{const st=await saveFile('modelo_banco_imagens.csv',csv,'text/csv');if(st==='saved')toast('Modelo baixado');else if(st==='unavailable')toast('Baixar arquivos não está disponível nesta visualização.')}catch(e){toast('Não foi possível baixar o modelo.')}};
+$('#icRun').onclick=async()=>{if(icBusy||!canUpload)return;const todo=icRows.filter(r=>r.ok);if(!todo.length)return;icBusy=true;$('#icRun').disabled=true;$('#icProg').hidden=false;const bar=$('#icProg i');bar.style.width='0';
+  let done=0,okN=0,fail=0;
+  for(const r of todo){try{let id=r.reuse,w=null,h=null,bytes=null,comp=r.comp;
+      if(r.foto){const im=await loadImage(r.foto);const j=await toJpeg(im,1600,0.85);w=j.w;h=j.h;bytes=j.blob.size;
+        if(!comp&&r.base==='linha'&&$('#iComp').checked)comp=await composicao(j.blob,r.equipamento||iEq);
+        id=await imgStore.put(j.blob)}
+      const old=imgs.find(d=>d.assetId===id);
+      await imgDocs.add({assetId:id,nome:r.nome,tipo:r.tipo,base:r.base,classe:r.classe,equipamento:r.equipamento,data:r.data,ponto:r.ponto,obs:r.obs,analise:r.analise,
+        largura:w||(old&&old.largura)||null,altura:h||(old&&old.altura)||null,bytes:bytes||(old&&old.bytes)||null,composicao:comp,origem:'importado',criadoEm:new Date().toISOString()});
+      r.ok=false;r.dup=true;r.motivo='importada';okN++}
+    catch(e){fail++;r.motivo=UPERR[e&&e.code]||'falhou';if(e&&['quota_or_state','not_granted','upstream_auth','unauthorized'].includes(e.code)){toast('Importação interrompida: '+r.motivo+'.');break}}
+    done++;bar.style.width=(done/todo.length*100)+'%'}
+  icBusy=false;setTimeout(()=>$('#icProg').hidden=true,600);
+  $('#icList').innerHTML=icRows.map(r=>`<div class="crow"><span class="cname">${esc(r.nome||'(sem nome)')}</span><span class="pill ${r.motivo==='importada'?'ok':r.dup?'warn':'bad'}">${esc(r.motivo)}</span></div>`).join('');
+  $('#icSum').textContent=`${okN} ${okN===1?'imagem importada':'imagens importadas'}`+(fail?` · ${fail} com erro`:'');$('#icRun').disabled=true;$('#icRun').textContent='Importar';
+  if(okN)toast(`${okN} ${okN===1?'imagem importada':'imagens importadas'}`);updateUsage()};
+
+function setCanUpload(v){canUpload=v;$('#iPerm').hidden=v;$('#iForm').hidden=!v;renderQueue()}
+function useLocalImgs(){const K='tg_imgs';const load=()=>ls.get(K,[]);const emit=()=>{imgs=load();renderGal()};
+  imgStore={kind:'local',put:async b=>{const id='b'+Date.now()+Math.random().toString(36).slice(2,7);await idb.run('readwrite',s=>s.put(b,id));return id},
+    src:async id=>{if(srcCache[id])return srcCache[id];try{const b=await idb.run('readonly',s=>s.get(id));return b?(srcCache[id]=URL.createObjectURL(b)):''}catch(e){return ''}},
+    del:async id=>{await idb.run('readwrite',s=>s.delete(id))}};
+  imgDocs={add:async d=>{const a=load();d._id='i'+Date.now()+Math.random().toString(36).slice(2,6);a.push(d);ls.set(K,a);emit()},del:async id=>{ls.set(K,load().filter(x=>x._id!==id));emit()}};
+  setCanUpload(typeof indexedDB!=='undefined');emit()}
+
+/* ---------- relatório padrão (PDF) ---------- */
+let pdfLib=null;
+function loadPdf(){return pdfLib||(pdfLib=new Promise((res,rej)=>{if(window.jspdf)return res(window.jspdf.jsPDF);const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  sc.onload=()=>window.jspdf?res(window.jspdf.jsPDF):rej(new Error('lib'));sc.onerror=()=>{pdfLib=null;rej(new Error('lib'))};document.head.appendChild(sc)}))}
+async function saveFile(name,data,mime){const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+  if(dl){try{await dl.save({filename:name,data});return 'saved'}catch(e){if(e&&e.code==='declined')return 'declined';throw e}}
+  if(!window.claude){const a=document.createElement('a');a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();return 'saved'}
+  return 'unavailable'}
+$('#repResp').value=ls.get('tg_resp','');$('#repResp').onchange=e=>ls.set('tg_resp',e.target.value.trim());
+const PDFC={incolor_limpo:'#8fd0c6',incolor_sujo:'#c8ad55',cinza_limpo:'#263036',cinza_sujo:'#7a8389',branco:'#f3efe4',verde:'#3c9566',azul_vermelho:'#b34f3a'};
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+function frameImages(k){if(!k)return null;const a=document.createElement('canvas');a.width=k.w;a.height=k.h;a.getContext('2d').putImageData(k.img,0,0);
+  const b=document.createElement('canvas');b.width=k.w;b.height=k.h;const o=new ImageData(new Uint8ClampedArray(k.img.data),k.w,k.h);
+  for(let i=0;i<k.code.length;i++){const col=OVC[k.code[i]];if(col){o.data[4*i]=col[0];o.data[4*i+1]=col[1];o.data[4*i+2]=col[2]}}b.getContext('2d').putImageData(o,0,0);
+  return {orig:a.toDataURL('image/jpeg',0.88),cls:b.toDataURL('image/jpeg',0.88),w:k.w,h:k.h}}
+async function genReport(r){
+  const JsPDF=await loadPdf();const doc=new JsPDF({unit:'mm',format:'a4'});const W=210,M=14,BOT=278;let y;
+  const ink=[15,59,58],acc=[217,138,16],mut=[91,107,105],ln=[207,217,215],fg=[22,32,31];
+  const T=(t,x,yy,o={})=>{doc.setFont('helvetica',o.b?'bold':'normal');doc.setFontSize(o.s||9);doc.setTextColor(...(o.c||fg));doc.text(String(t),x,yy,o.a?{align:o.a}:undefined)};
+  const head=()=>{doc.setFillColor(...ink);doc.rect(0,0,W,26,'F');T('RELATÓRIO DE ANÁLISE DE AMOSTRA',M,11.5,{b:1,s:14,c:[255,255,255]});
+    T([cfg.relatorio.titulo,cfg.relatorio.empresa].filter(Boolean).join('  ·  '),M,19,{s:9,c:[190,226,220]});
+    T('Nº '+r.video,W-M,11.5,{b:1,s:10,c:[255,255,255],a:'right'});T('Emitido em '+new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}),W-M,19,{s:8,c:[190,226,220],a:'right'})};
+  const need=h=>{if(y+h>BOT){doc.addPage();head();y=36}};
+  const sec=(n,t,h)=>{need(h||20);T(`${n}. ${t.toUpperCase()}`,M,y,{b:1,s:9.5,c:ink});doc.setDrawColor(...acc);doc.setLineWidth(0.7);doc.line(M,y+1.8,M+14,y+1.8);y+=8};
+  head();y=36;
+  const dt=r.data?r.data.slice(8,10)+'/'+r.data.slice(5,7)+'/'+r.data.slice(0,4):'–';
+  sec(1,'Identificação da amostra');
+  const kv=[['Equipamento',r.equipamento],['Superfície',r.superficie],['Data da amostra',dt],['Ponto da linha',r.ponto||'Não informado'],['Quadros analisados',r.quadros||'–'],['Responsável',r.responsavel||'–'],['Arquivo',r.arquivo||'–'],['Área analisada',r.recorte||'Imagem inteira']];
+  kv.forEach(([k,v],i)=>{const x=M+(i%2)*92,yy=y+Math.floor(i/2)*6.4;T(k,x,yy,{s:7.5,c:mut});doc.setFont('helvetica','normal');doc.setFontSize(9);T(doc.splitTextToSize(String(v||'–'),58)[0],x+31,yy,{s:9})});
+  y+=Math.ceil(kv.length/2)*6.4+5;
+  sec(2,'Composição — % da área visível',75);
+  T('Classe',M,y,{b:1,s:7.5,c:mut});T('% área',M+78,y,{b:1,s:7.5,c:mut,a:'right'});T('Incolor limpo em escala 0–100%; demais em escala 0–25%',W-M,y,{s:7,c:mut,a:'right'});y+=2;
+  doc.setDrawColor(...ln);doc.setLineWidth(0.2);doc.line(M,y,W-M,y);y+=5;
+  let soma=0;
+  CL.forEach(c=>{const v=+r[c.k]||0;soma+=v;doc.setFillColor(...hex(PDFC[c.k]));doc.setDrawColor(...ln);doc.rect(M,y-2.9,3.4,3.4,'FD');T(c.n,M+6,y,{s:9});T(fmt(v),M+78,y,{b:1,s:9,a:'right'});
+    const bx=M+86,bw=W-M-bx,sc=c.k==='incolor_limpo'?1:4;doc.setFillColor(232,237,236);doc.rect(bx,y-2.6,bw,3,'F');doc.setFillColor(...hex(PDFC[c.k]));doc.rect(bx,y-2.6,Math.max(0.3,Math.min(bw,bw*v*sc/100)),3,'F');
+    y+=6.2;doc.setDrawColor(...ln);doc.line(M,y-3.6,W-M,y-3.6)});
+  T('Soma',M+6,y,{s:8,c:mut});T(fmt(soma),M+78,y,{s:8,c:mut,a:'right'});y+=7;
+  const st=status(r);const bad=st.some(x=>x[0]==='bad'),warn=st.some(x=>x[0]==='warn');
+  const sc2=bad?[179,38,30]:warn?[180,86,12]:[46,125,79];doc.setFillColor(...sc2);doc.roundedRect(M,y-4.2,W-2*M,7.5,1.5,1.5,'F');
+  T('SITUAÇÃO: '+st.map(x=>x[1]).join('  ·  ').toUpperCase(),M+3,y+0.6,{b:1,s:8.5,c:[255,255,255]});y+=8;
+  T(`Aprovado quando menor que o limite: cinza total < ${String(thr.cz).replace('.',',')}%  ·  branco opaco < ${String(thr.br).replace('.',',')}%  ·  incolor sujo < ${String(thr.is).replace('.',',')}%`,M,y,{s:7.5,c:mut});y+=9;
+  sec(3,'Balanço por destino',32);
+  const cz=(+r.cinza_limpo||0)+(+r.cinza_sujo||0),ct=(+r.branco||0)+(+r.verde||0)+(+r.azul_vermelho||0);
+  const bw4=(W-2*M-9)/4;[[r.incolor_limpo,'Produto incolor pronto'],[r.incolor_sujo,'Recuperável com lavagem'],[cz,'Vidro cinza (vender como colorido)'],[ct,'Contaminantes (branco + cores)']].forEach(([v,t],i)=>{const x=M+i*(bw4+3);
+    doc.setFillColor(232,237,236);doc.roundedRect(x,y-4,bw4,19,1.5,1.5,'F');T(fmt(+v||0),x+3,y+3,{b:1,s:13});doc.setFont('helvetica','normal');doc.setFontSize(7);T(doc.splitTextToSize(t,bw4-6).slice(0,2).join('\n'),x+3,y+8.5,{s:7,c:mut})});
+  y+=23;
+  const im=r.imgs;
+  if(im){const two=!!im.cls,gap=6,cw=two?(W-2*M-gap)/2:Math.min(110,W-2*M);let h=cw*im.h/im.w,w=cw;if(h>88){h=88;w=h*im.w/im.h}
+    sec(4,'Imagens',h+22);
+    const xs=two?[M+(cw-w)/2,M+cw+gap+(cw-w)/2]:[M];
+    doc.addImage(im.orig,'JPEG',xs[0],y,w,h);T(two?'Quadro original (área analisada)':'Quadro guardado da análise',xs[0],y+h+4,{s:7.5,c:mut});
+    if(two){doc.addImage(im.cls,'JPEG',xs[1],y,w,h);T('Classificação',xs[1],y+h+4,{s:7.5,c:mut})}
+    y+=h+9;
+    if(two){let x=M;[['Incolor sujo',OVC[1]],['Cinza limpo',OVC[2]],['Cinza sujo',OVC[3]],['Branco',OVC[4]],['Verde',OVC[5]],['Azul/verm.',OVC[6]],['Correia',OVC[8]]].forEach(([n,c])=>{doc.setFillColor(...c);doc.rect(x,y-2.6,3,3,'F');T(n,x+4.2,y,{s:7});x+=4.2+doc.getTextWidth(n)+5});
+      T('sem cor = incolor limpo',x,y,{s:7,c:mut});y+=8}}
+  else{sec(4,'Imagens');T('Nenhuma imagem guardada para esta análise.',M,y,{s:8.5,c:mut});y+=8}
+  const obsL=r.obs?(doc.setFontSize(9),doc.splitTextToSize(r.obs,W-2*M-6)):[];const oh=Math.max(16,obsL.length*4.6+8);
+  sec(5,'Observações',oh+40);doc.setDrawColor(...ln);doc.setLineWidth(0.3);doc.roundedRect(M,y-4,W-2*M,oh,1.5,1.5,'S');
+  if(obsL.length)T(obsL.join('\n'),M+3,y+1.5,{s:9});y+=oh+4;
+  need(34);doc.setFontSize(7);T(doc.splitTextToSize('Método: 1 quadro por segundo do vídeo (até 30), recortado na área indicada; cada pixel é classificado por cor e brilho relativos ao próprio quadro. Os percentuais medem área de superfície visível, não massa. A separação entre incolor limpo e incolor sujo é a menos precisa.',W-2*M-70).join('\n'),M,y+4,{s:7,c:mut});
+  doc.setDrawColor(...fg);doc.setLineWidth(0.3);doc.line(W-M-60,y+14,W-M,y+14);T('Responsável técnico',W-M-30,y+18.5,{s:7.5,c:mut,a:'center'});if(r.responsavel)T(r.responsavel,W-M-30,y+12,{s:9,a:'center'});
+  const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);T(`Página ${i} de ${n}`,W-M,290,{s:7,c:mut,a:'right'});T(cfg.relatorio.titulo,M,290,{s:7,c:mut})}
+  return doc.output('blob')}
+async function runReport(r,btn,hint){const old=btn.textContent;btn.disabled=true;btn.textContent='Gerando…';
+  try{const blob=await genReport(r);const st=await saveFile(`Relatorio_${String(r.video).replace(/[^\w.-]+/g,'_')}.pdf`,blob,'application/pdf');
+    if(st==='saved')toast('Relatório gerado');else if(st==='unavailable')toast('Baixar arquivos não está disponível nesta visualização.')}
+  catch(e){toast(e&&e.message==='lib'?'Não consegui carregar o gerador de PDF. Verifique a internet e tente de novo.':'Não foi possível gerar o relatório.')}
+  btn.disabled=false;btn.textContent=old}
+$('#repBtn').onclick=()=>{if(!lastRes)return;const c0=lastCtx||{};
+  runReport(Object.assign({},lastRes,c0,{video:($('#saveName').value||suggestName()).trim(),responsavel:$('#repResp').value.trim(),obs:$('#repObs').value.trim(),imgs:frameImages(keepOv)}),$('#repBtn'))};
+async function blobToDataURL(b){return new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>res(null);fr.readAsDataURL(b)})}
+async function repFromHist(id,btn){const r=records.find(x=>x._id===id);if(!r)return;let imgsD=null;
+  const d=imgs.find(x=>x.analise===r.video);
+  if(d){try{const src=srcOf(d)||(imgStore&&imgStore.kind==='local'?await imgStore.src(d.assetId):'');if(src){const b=await (await fetch(src)).blob();const u=await blobToDataURL(b);
+      if(u){const im=await loadImage(b);imgsD={orig:u,cls:null,w:im.naturalWidth,h:im.naturalHeight}}}}catch(e){}}
+  runReport(Object.assign({},r,{superficie:r.superficie||'–',responsavel:$('#repResp').value.trim(),obs:'',imgs:imgsD}),btn)}
+
+/* ---------- tela de cadastros ---------- */
+function applyCfg(c){cfg=normCfg(c);$('#rTit').value=cfg.relatorio.titulo;$('#rEmp').value=cfg.relatorio.empresa;renderSurfOpts();renderEqSeg();renderIEq();renderITipo();renderPontos();renderClasses();renderCad();if(!views.img.hidden)renderGal()}
+async function saveCfg(next){try{if(cfgWrite)await cfgWrite(next);else{ls.set('tg_cfg',next);applyCfg(next)}return true}
+  catch(e){toast('Não foi possível salvar o cadastro. Você pode não ter permissão de edição.');return false}}
+const clone=()=>JSON.parse(JSON.stringify(cfg));
+$('#rSave').onclick=async()=>{const c=clone();c.relatorio={titulo:$('#rTit').value.trim()||DEFCFG.relatorio.titulo,empresa:$('#rEmp').value.trim()};if(await saveCfg(c))toast('Cabeçalho salvo')};
+const same=(a,b)=>a.trim().toLowerCase()===b.trim().toLowerCase();
+function rowDel(key,label,inUse){return `<button type="button" class="btn ghost small" data-del="${key}" data-lbl="${esc(label)}"${inUse?` data-use="${esc(inUse)}"`:''}>Remover</button>`}
+window.__renderCad=()=>renderCad();
+function renderCad(){
+  const sfOpts=sel=>cfg.superficies.map(x=>`<option ${x.nome===sel?'selected':''}>${esc(x.nome)}</option>`).join('');
+  const used=n=>cfg.equipamentos.filter(e=>e.superficie===n).map(e=>e.codigo).join(', ');
+  $('#cad').innerHTML=`
+  <div class="cadsec"><h3>Equipamentos</h3><p class="hint">Cada equipamento usa uma superfície, que define o recorte inicial e como o fundo é tratado.</p>
+    ${cfg.equipamentos.map((e,i)=>`<div class="crow"><span class="cname">${esc(e.codigo)}</span><select data-eqsf="${i}" aria-label="Superfície de ${esc(e.codigo)}">${sfOpts(e.superficie)}</select>${rowDel('equipamentos:'+i,e.codigo)}</div>`).join('')}
+    <form class="cadd" data-add="equipamentos"><input type="text" name="n" placeholder="Código, ex.: CV31" maxlength="24" aria-label="Código do novo equipamento"><select name="sf" aria-label="Superfície">${sfOpts(cfg.superficies[0].nome)}</select><button class="btn small">Adicionar</button></form></div>
+  <div class="cadsec"><h3>Superfícies</h3><p class="hint">Fundo escuro faz o app descontar faixas escuras entre as peças, como na correia preta. O recorte é a faixa vertical analisada por padrão.</p>
+    ${cfg.superficies.map((x,i)=>`<div class="crow"><span class="cname">${esc(x.nome)}</span><span class="cmeta">fundo ${x.escuro?'escuro':'claro'} · recorte ${x.recorte?x.recorte[0]:0}–${x.recorte?x.recorte[1]:100}% da altura</span>${rowDel('superficies:'+i,x.nome,used(x.nome))}</div>`).join('')}
+    <form class="cadd" data-add="superficies"><input type="text" name="n" placeholder="Nome, ex.: Mesa vibratória" maxlength="40" aria-label="Nome da nova superfície"><select name="esc" aria-label="Tipo de fundo"><option value="0">Fundo claro / metálico</option><option value="1">Fundo escuro (correia)</option></select>
+      <label class="mini">Topo % <input type="number" name="t" min="0" max="90" value="30"></label><label class="mini">Base % <input type="number" name="b" min="10" max="100" value="97"></label><button class="btn small">Adicionar</button></form></div>
+  <div class="cadsec"><h3>Tipos de imagem</h3><p class="hint">Tipos de "quadro da linha" podem ter a composição calculada. Tipos de "referência" pedem a classe da amostra.</p>
+    ${cfg.tipos.map((t,i)=>`<div class="crow"><span class="cname">${esc(t.nome)}</span><span class="cmeta">${t.base==='referencia'?'referência · pede classe':'quadro da linha · calcula composição'}</span>${rowDel('tipos:'+i,t.nome)}</div>`).join('')}
+    <form class="cadd" data-add="tipos"><input type="text" name="n" placeholder="Nome, ex.: Rejeito do óptico" maxlength="40" aria-label="Nome do novo tipo"><select name="base" aria-label="Comportamento"><option value="linha">Quadro da linha</option><option value="referencia">Amostra de referência</option></select><button class="btn small">Adicionar</button></form></div>
+  <div class="cadsec"><h3>Pontos da linha</h3>
+    ${cfg.pontos.map((p,i)=>`<div class="crow"><span class="cname">${esc(p)}</span>${rowDel('pontos:'+i,p)}</div>`).join('')||'<p class="hint">Nenhum ponto cadastrado.</p>'}
+    <form class="cadd" data-add="pontos"><input type="text" name="n" placeholder="Nome, ex.: Saída do britador" maxlength="40" aria-label="Nome do novo ponto"><button class="btn small">Adicionar</button></form></div>
+  <div class="cadsec"><h3>Classes de amostra</h3><p class="hint">Usadas nas amostras de referência da aba Imagens. O número mostra quantas imagens já existem de cada classe.</p>
+    ${cfg.classes.map((c,i)=>{const q=imgs.filter(d=>isRef(d)&&d.classe===c).length;return `<div class="crow"><span class="cname">${esc(c)}</span><span class="cmeta">${q} ${q===1?'imagem':'imagens'}</span>${rowDel('classes:'+i,c)}</div>`}).join('')}
+    <form class="cadd" data-add="classes"><input type="text" name="n" placeholder="Nome, ex.: Cerâmica / porcelana" maxlength="40" aria-label="Nome da nova classe"><button class="btn small">Adicionar</button></form></div>`;
+  $('#cad').querySelectorAll('select[data-eqsf]').forEach(el=>el.onchange=async()=>{const c=clone();c.equipamentos[+el.dataset.eqsf].superficie=el.value;if(await saveCfg(c))toast('Superfície atualizada')});
+  $('#cad').querySelectorAll('button[data-del]').forEach(b=>b.onclick=()=>{
+    const [k,i]=b.dataset.del.split(':');
+    if(b.dataset.use){toast(`Em uso por ${b.dataset.use}. Troque a superfície desses equipamentos antes.`);return}
+    if(k!=='pontos'&&cfg[k].length<=1){toast('Mantenha pelo menos um item nesta lista.');return}
+    const sp=document.createElement('span');sp.className='confirm';sp.innerHTML=`Remover? <button type="button" class="btn small">Remover</button><button type="button" class="btn ghost small">Cancelar</button>`;
+    b.replaceWith(sp);const [yes,no]=sp.querySelectorAll('button');no.onclick=renderCad;
+    yes.onclick=async()=>{const c=clone();c[k].splice(+i,1);if(await saveCfg(c))toast(`${b.dataset.lbl} removido. Registros antigos mantêm o nome.`)}});
+  $('#cad').querySelectorAll('form[data-add]').forEach(f=>f.onsubmit=async e=>{e.preventDefault();const k=f.dataset.add,n=f.n.value.trim();
+    if(!n){f.n.focus();return}
+    const names=k==='equipamentos'?cfg.equipamentos.map(x=>x.codigo):(k==='pontos'||k==='classes')?cfg[k]:cfg[k].map(x=>x.nome);
+    if(names.some(x=>same(x,n))){toast('Já existe um item com esse nome.');return}
+    const c=clone();
+    if(k==='equipamentos')c.equipamentos.push({codigo:n.toUpperCase()===n||n.length>6?n:n.toUpperCase(),superficie:f.sf.value});
+    else if(k==='superficies'){let t=Math.max(0,Math.min(90,parseInt(f.t.value)||0)),b=Math.max(10,Math.min(100,parseInt(f.b.value)||100));if(b<=t+5)b=Math.min(100,t+10);c.superficies.push({nome:n,escuro:f.esc.value==='1',recorte:[t,b]})}
+    else if(k==='tipos')c.tipos.push({nome:n,base:f.base.value});
+    else if(k==='classes')c.classes.push(n);
+    else c.pontos.push(n);
+    if(await saveCfg(c))toast(`${n} cadastrado`)})}
+
+/* ---------- base compartilhada no Netlify (Functions + Blobs) ---------- */
+let netOn=false;
+async function netDetect(){try{const r=await fetch('api/ping',{cache:'no-store'});if(!r.ok)return null;const j=await r.json();return j&&j.ok?j:null}catch(e){return null}}
+async function checkKey(k){try{const r=await fetch('api/ping',{headers:{'x-app-key':k},cache:'no-store'});const j=await r.json();return !!j.authorized}catch(e){return false}}
+function askKey(invalid){const m=$('#keyModal');m.hidden=false;$('#kErr').textContent=invalid?'Código inválido ou alterado. Digite de novo.':'';setTimeout(()=>$('#kIn').focus(),50)}
+$('#kForm').onsubmit=async e=>{e.preventDefault();const v=$('#kIn').value.trim();if(!v)return;$('#kErr').textContent='Verificando…';
+  if(await checkKey(v)){ls.set('tg_key',v);$('#keyModal').hidden=true;$('#kIn').value='';useNet(v)}else $('#kErr').textContent='Código não confere.'};
+$('#kLocal').onclick=()=>{$('#keyModal').hidden=true;toast('Usando só os dados deste aparelho.')};
+function useNet(key){
+  const H=()=>key?{'x-app-key':key}:{};
+  const api=async(path,o={})=>{const r=await fetch('api/'+path,Object.assign({cache:'no-store'},o,{headers:Object.assign({},o.headers||{},H())}));
+    if(r.status===401){ls.set('tg_key','');askKey(true);throw {code:'unauthorized'}}
+    if(!r.ok){let j={};try{j=await r.json()}catch(x){}throw {code:j.error||('http'+r.status)}}return r.json()};
+  const J=b=>({headers:{'content-type':'application/json'},body:JSON.stringify(b)});
+  let busyR=false;const last={a:null,i:null,c:null};
+  const refresh=async()=>{if(busyR)return;busyR=true;try{const [a,i,c]=await Promise.all([api('list/analises'),api('list/imagens'),api('config')]);
+      const sa=JSON.stringify(a),si=JSON.stringify(i),sc=JSON.stringify(c);
+      if(c&&sc!==last.c){last.c=sc;applyCfg(c)}if(sa!==last.a){last.a=sa;records=a;renderHist()}if(si!==last.i){last.i=si;imgs=i;renderGal()}$('#sync').textContent='base compartilhada'}
+    catch(e){if(e.code!=='unauthorized')$('#sync').textContent='sem conexão com a base'}finally{busyR=false}};
+  store={kind:'net',add:async r=>{await api('doc/analises',Object.assign({method:'POST'},J(r)));await refresh()},del:async id=>{await api('doc/analises/'+encodeURIComponent(id),{method:'DELETE'});await refresh()}};
+  imgDocs={add:async d=>{await api('doc/imagens',Object.assign({method:'POST'},J(d)));await refresh()},del:async id=>{await api('doc/imagens/'+encodeURIComponent(id),{method:'DELETE'});await refresh()}};
+  imgStore={kind:'net',put:async b=>(await api('blob',{method:'POST',headers:{'content-type':b.type||'image/jpeg'},body:b})).id,
+    del:async id=>{await api('blob/'+encodeURIComponent(id),{method:'DELETE'})},url:id=>'api/blob/'+encodeURIComponent(id)+(key?'?k='+encodeURIComponent(key):'')};
+  cfgWrite=async c=>{await api('config',Object.assign({method:'PUT'},J(c)));applyCfg(c)};
+  $('#cadScope').textContent='compartilhados';setCanUpload(true);$('#sync').textContent='conectando…';refresh();
+  if(!netOn){netOn=true;setInterval(()=>{if(document.visibilityState==='visible')refresh()},30000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh()})}}
+
+/* ---------- armazenamento: banco compartilhado ou local ---------- */
+function useLocal(){const K='tg_records';const load=()=>ls.get(K,[]);const emit=()=>{records=load();renderHist()};
+  store={kind:'local',add:async r=>{const a=load();r._id='l'+Date.now()+Math.random().toString(36).slice(2,6);a.push(r);ls.set(K,a);emit()},del:async id=>{ls.set(K,load().filter(r=>r._id!==id));emit()}};
+  $('#sync').textContent='histórico neste aparelho';emit()}
+async function init(){
+  if(['hist','img','met'].includes(startView))show(startView);
+  applyCfg(ls.get('tg_cfg',null));
+  if(!(window.claude&&window.claude.use)){$('#cadScope').textContent='neste aparelho';useLocal();useLocalImgs();
+    const pg=location.protocol.startsWith('http')?await netDetect():null;
+    if(pg){if(!pg.needKey)useNet('');else{const k=ls.get('tg_key','');if(k&&await checkKey(k))useNet(k);else askKey(false)}}
+    return}
+  useLocal();setCanUpload(false);renderGal();
+  const db=await window.claude.use('db');if(!db){$('#cadScope').textContent='neste aparelho';return}
+  const cdoc=db.doc('config/listas');cfgWrite=async c=>{await cdoc.set(c)};$('#cadScope').textContent='compartilhados';
+  cdoc.onSnapshot(sn=>{if(sn.exists)applyCfg(sn.data())},()=>{});
+  const icol=db.collection('imagens');
+  imgDocs={add:async d=>{await icol.add(d)},del:async id=>{await icol.doc(id).delete()}};
+  imgStore={kind:'db',put:async b=>{if(!assetsNs)throw {code:'not_granted'};return (await assetsNs.upload(b,{type:'image/jpeg'})).id},del:async id=>{if(assetsNs)await assetsNs.delete(id)}};
+  icol.onSnapshot(s=>{imgs=s.docs.map(d=>Object.assign({_id:d.id},d.data()));renderGal()},()=>{});
+  window.claude.use('assets').then(a=>{assetsNs=a;setCanUpload(!!a);updateUsage()});
+  const col=db.collection('analises');
+  store={kind:'db',add:async r=>{await col.add(r)},del:async id=>{await col.doc(id).delete()}};
+  $('#sync').textContent='conectando…';
+  col.onSnapshot(s=>{records=s.docs.map(d=>Object.assign({_id:d.id},d.data()));$('#sync').textContent='histórico compartilhado';renderHist()},
+    ()=>{$('#sync').textContent='histórico indisponível'});
+}
+init();
+})();
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script></body></html>
